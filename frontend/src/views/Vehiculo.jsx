@@ -57,7 +57,7 @@ export default function Vehiculo() {
                     fontWeight: '700',
                     fontSize: '18px',
                 }}>
-                    🚗 RentalVehiAndino
+                    RentalVehiAndino
                 </span>
                 <span style={{ color: '#93c5fd', fontSize: '13px' }}>
                     {vehiculos.length} vehículo{vehiculos.length !== 1 ? 's' : ''} registrado{vehiculos.length !== 1 ? 's' : ''}
@@ -77,7 +77,7 @@ export default function Vehiculo() {
                         border: `1px solid ${alerta.error ? '#fecaca' : '#bbf7d0'}`,
                         fontSize: '14px',
                     }}>
-                        {alerta.error ? '❌' : '✅'} {alerta.msg}
+                        {alerta.error ? '' : ''} {alerta.msg}
                     </div>
                 )}
 
@@ -103,7 +103,7 @@ export default function Vehiculo() {
                             fontWeight: '700',
                             color: '#111827',
                         }}>
-                            {modoEdicion ? '✏️ Editar Vehículo' : '🚗 Registrar Vehículo'}
+                            {modoEdicion ? ' Editar Vehículo' : ' Registrar Vehículo'}
                         </h2>
 
                         <form onSubmit={modoEdicion ? actualizarVehiculo : crearVehiculo}>
@@ -118,11 +118,11 @@ export default function Vehiculo() {
                                     style={inputStyle}
                                     required
                                 >
-                                    <option value="carro">🚗 Carro</option>
-                                    <option value="moto">🏍️ Moto</option>
-                                    <option value="mototaxi">🛺 Mototaxi</option>
-                                    <option value="bicicleta">🚲 Bicicleta</option>
-                                    <option value="scooter">🛵 Scooter</option>
+                                    <option value="carro"> Carro</option>
+                                    <option value="moto"> Moto</option>
+                                    <option value="mototaxi"> Mototaxi</option>
+                                    <option value="bicicleta"> Bicicleta</option>
+                                    <option value="scooter"> Scooter</option>
                                 </select>
                             </div>
 

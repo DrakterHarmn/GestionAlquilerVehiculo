@@ -1,12 +1,6 @@
 import useVehiculo from "../hooks/useVehiculo";
 
-const ICONOS = {
-    carro:     '🚗',
-    moto:      '🏍️',
-    mototaxi:  '🛺',
-    bicicleta: '🚲',
-    scooter:   '🛵',
-};
+
 
 export default function ListaVehiculos() {
 
@@ -23,7 +17,8 @@ export default function ListaVehiculos() {
     if (vehiculos.length === 0) {
         return (
             <div style={{ textAlign: 'center', padding: '40px', color: '#aaa' }}>
-                <p style={{ fontSize: '48px' }}>📦</p>
+                <p style={{ fontSize: '48px' }}></p>
+                <br />
                 <p>No hay vehículos registrados.</p>
             </div>
         );
@@ -59,9 +54,7 @@ export default function ListaVehiculos() {
                         justifyContent: 'space-between',
                         alignItems: 'center',
                     }}>
-                        <span style={{ fontSize: '28px' }}>
-                            {ICONOS[v.tipo_vehiculo] || '🚗'}
-                        </span>
+                        
                         <span style={{
                             backgroundColor: '#3b82f6',
                             color: '#fff',
@@ -163,7 +156,7 @@ export default function ListaVehiculos() {
                                 fontWeight: '500',
                             }}
                         >
-                            ✏️ Editar
+                            Editar
                         </button>
 
                         <button
@@ -180,7 +173,7 @@ export default function ListaVehiculos() {
                                 fontWeight: '500',
                             }}
                         >
-                            🗑️ Eliminar
+                            Eliminar
                         </button>
 
                     </div>
