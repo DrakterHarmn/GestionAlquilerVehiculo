@@ -94,7 +94,7 @@ const VehiculoProvider = ({ children }) => {
 
         try {
 
-            const { data } = await clienteAxios.get('/vehiculos');
+            const { data } = await clienteAxios.get('/api/vehiculos');
 
             setVehiculos(data);
 
@@ -122,7 +122,7 @@ const VehiculoProvider = ({ children }) => {
 
         try {
 
-            const { data } = await clienteAxios.post('/vehiculos', form);
+            const { data } = await clienteAxios.post('/api/vehiculos', form);
 
             setVehiculos([...vehiculos, data]);
 
@@ -186,8 +186,7 @@ const VehiculoProvider = ({ children }) => {
 
         try {
 
-            const { data } = await clienteAxios.put(
-                `/vehiculos/${editandoId}`,
+            const { data } = await clienteAxios.put(`/api/vehiculos/${editandoId}`,
                 form
             );
 
@@ -232,7 +231,7 @@ const VehiculoProvider = ({ children }) => {
 
         try {
 
-            await clienteAxios.delete(`/vehiculos/${id}`);
+            await clienteAxios.delete(`/api/vehiculos/${id}`);
 
             setVehiculos(vehiculos.filter((v) => v.id !== id));
 
