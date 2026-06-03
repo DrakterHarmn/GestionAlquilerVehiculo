@@ -1,308 +1,157 @@
-import useVehiculo from "../hooks/useVehiculo";
-import ListaVehiculos from './ListaVehiculos';
+import { useContext } from 'react';
+import VehiculoContext from '../context/VehiculoContext';
 
-const ANIO_MIN = 1990;
-const ANIO_MAX = new Date().getFullYear();
+const ESTADOS      = ['disponible','reservado','alquilado','mantenimiento','inactivo'];
+const COMBUSTIBLES = ['Gasolina','Diesel','GLP','GNV','Eléctrico','Híbrido'];
+const TRANSMISIONES= ['Manual','Automático','Semiautomático'];
 
-export default function Vehiculo() {
+const inp = { width:'100%', padding:'0.55rem 0.75rem', border:'1px solid #d1d5db', borderRadius:8, fontSize:13, boxSizing:'border-box' };
+const lbl = { display:'block', fontSize:12, fontWeight:600, color:'#6b7280', textTransform:'uppercase', marginBottom:3 };
 
-    // Conexión con el Provider
+function Vehiculo() {
     const {
-        vehiculos,
-        form,
-        alerta,
-        cargando,
-        modoEdicion,
-        handleInputChange,
-        crearVehiculo,
-        actualizarVehiculo,
-        resetForm,
-    } = useVehiculo();
-
-    // ── Estilos reutilizables ──────────────────────────────
-    const inputStyle = {
-        display: 'block',
-        width: '100%',
-        padding: '9px 12px',
-        marginTop: '4px',
-        border: '1.5px solid #e5e7eb',
-        borderRadius: '8px',
-        fontSize: '14px',
-        boxSizing: 'border-box',
-        outline: 'none',
-    };
-
-    const labelStyle = {
-        fontSize: '12px',
-        fontWeight: '600',
-        color: '#6b7280',
-        textTransform: 'uppercase',
-        letterSpacing: '0.4px',
-    };
+        form, modoEdicion, alerta,
+        categorias = [],
+        handleInputChange, resetForm,
+        crearVehiculo, actualizarVehiculo,
+    } = useContext(VehiculoContext);
 
     return (
+        <div style={{ background:'#fff', borderRadius:14, padding:'1.5rem', boxShadow:'0 2px 12px rgba(0,0,0,0.07)' }}>
+            <h3 style={{ color:'#1a1a2e', marginTop:0 }}>
+                {modoEdicion ? ' Editar Vehículo' : ' Registrar Vehículo'}
+            </h3>
 
-        <div style={{ minHeight: '100vh', backgroundColor: '#f5f4f0' }}>
-
-            {/* ── NAVBAR ──────────────────────────────────── */}
-            <nav style={{
-                backgroundColor: '#1a2b4a',
-                padding: '14px 24px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-            }}>
-                <span style={{
-                    color: '#fff',
-                    fontWeight: '700',
-                    fontSize: '18px',
-                }}>
-                    RentalVehiAndino
-                </span>
-                <span style={{ color: '#93c5fd', fontSize: '13px' }}>
-                    {vehiculos.length} vehículo{vehiculos.length !== 1 ? 's' : ''} registrado{vehiculos.length !== 1 ? 's' : ''}
-                </span>
-            </nav>
-
-            <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '24px' }}>
-
-                {/* ── ALERTA ──────────────────────────────── */}
-                {alerta.msg && (
-                    <div style={{
-                        padding: '12px 16px',
-                        marginBottom: '20px',
-                        borderRadius: '8px',
-                        backgroundColor: alerta.error ? '#fef2f2' : '#f0fdf4',
-                        color: alerta.error ? '#dc2626' : '#16a34a',
-                        border: `1px solid ${alerta.error ? '#fecaca' : '#bbf7d0'}`,
-                        fontSize: '14px',
-                    }}>
-                        {alerta.error ? '' : ''} {alerta.msg}
-                    </div>
-                )}
-
+            {/* Alerta */}
+            {alerta?.msg && (
                 <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: '340px 1fr',
-                    gap: '24px',
-                    alignItems: 'start',
+                    padding:'0.65rem 1rem', borderRadius:8, marginBottom:'1rem', fontSize:13,
+                    background: alerta.error ? '#fef2f2' : '#f0fdf4',
+                    color:      alerta.error ? '#dc2626' : '#16a34a',
+                    border:    `1px solid ${alerta.error ? '#fecaca' : '#bbf7d0'}`,
                 }}>
+                    {alerta.error ? '❌' : '✅'} {alerta.msg}
+                </div>
+            )}
 
-                    {/* ── FORMULARIO ──────────────────────── */}
-                    <div style={{
-                        backgroundColor: '#fff',
-                        borderRadius: '14px',
-                        padding: '24px',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                        border: '1px solid #e5e7eb',
-                    }}>
+            <form onSubmit={modoEdicion ? actualizarVehiculo : crearVehiculo}>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem' }}>
 
-                        <h2 style={{
-                            margin: '0 0 20px',
-                            fontSize: '17px',
-                            fontWeight: '700',
-                            color: '#111827',
-                        }}>
-                            {modoEdicion ? ' Editar Vehículo' : ' Registrar Vehículo'}
-                        </h2>
-
-                        <form onSubmit={modoEdicion ? actualizarVehiculo : crearVehiculo}>
-
-                            {/* TIPO */}
-                            <div style={{ marginBottom: '14px' }}>
-                                <label style={labelStyle}>Tipo de vehículo *</label>
-                                <select
-                                    name="tipo_vehiculo"
-                                    value={form.tipo_vehiculo}
-                                    onChange={handleInputChange}
-                                    style={inputStyle}
-                                    required
-                                >
-                                    <option value="carro"> Carro</option>
-                                    <option value="moto"> Moto</option>
-                                    <option value="mototaxi"> Mototaxi</option>
-                                    <option value="bicicleta"> Bicicleta</option>
-                                    <option value="scooter"> Scooter</option>
-                                </select>
-                            </div>
-
-                            {/* MARCA */}
-                            <div style={{ marginBottom: '14px' }}>
-                                <label style={labelStyle}>Marca *</label>
-                                <input
-                                    type="text"
-                                    name="marca"
-                                    value={form.marca}
-                                    onChange={handleInputChange}
-                                    placeholder="Ej: Honda"
-                                    style={inputStyle}
-                                    required
-                                    maxLength={100}
-                                />
-                            </div>
-
-                            {/* MODELO */}
-                            <div style={{ marginBottom: '14px' }}>
-                                <label style={labelStyle}>Modelo *</label>
-                                <input
-                                    type="text"
-                                    name="modelo"
-                                    value={form.modelo}
-                                    onChange={handleInputChange}
-                                    placeholder="Ej: CB190"
-                                    style={inputStyle}
-                                    required
-                                    maxLength={100}
-                                />
-                            </div>
-
-                            {/* AÑO y PLACA en grid */}
-                            <div style={{
-                                display: 'grid',
-                                gridTemplateColumns: '1fr 1fr',
-                                gap: '12px',
-                                marginBottom: '14px',
-                            }}>
-                                <div>
-                                    <label style={labelStyle}>Año *</label>
-                                    <input
-                                        type="number"
-                                        name="anio"
-                                        value={form.anio}
-                                        onChange={handleInputChange}
-                                        min={ANIO_MIN}
-                                        max={ANIO_MAX}
-                                        style={inputStyle}
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label style={labelStyle}>Placa *</label>
-                                    <input
-                                        type="text"
-                                        name="placa"
-                                        value={form.placa}
-                                        onChange={handleInputChange}
-                                        placeholder="ABC-123"
-                                        style={{ ...inputStyle, textTransform: 'uppercase' }}
-                                        required
-                                        maxLength={10}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* PRECIO */}
-                            <div style={{ marginBottom: '14px' }}>
-                                <label style={labelStyle}>Precio por día (S/) *</label>
-                                <input
-                                    type="number"
-                                    name="precio_alquiler"
-                                    value={form.precio_alquiler}
-                                    onChange={handleInputChange}
-                                    placeholder="0.00"
-                                    min={0.01}
-                                    step={0.01}
-                                    style={inputStyle}
-                                    required
-                                />
-                            </div>
-
-                            {/* DISPONIBLE */}
-                            <div style={{
-                                marginBottom: '20px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                            }}>
-                                <input
-                                    type="checkbox"
-                                    name="disponible"
-                                    id="disponible"
-                                    checked={form.disponible}
-                                    onChange={handleInputChange}
-                                    style={{ width: '16px', height: '16px' }}
-                                />
-                                <label
-                                    htmlFor="disponible"
-                                    style={{ fontSize: '14px', color: '#374151', cursor: 'pointer' }}
-                                >
-                                    Disponible para alquiler
-                                </label>
-                            </div>
-
-                            {/* BOTONES */}
-                            <div style={{ display: 'flex', gap: '10px' }}>
-
-                                <button
-                                    type="submit"
-                                    disabled={cargando}
-                                    style={{
-                                        flex: 1,
-                                        padding: '10px',
-                                        backgroundColor: '#1a2b4a',
-                                        color: '#fff',
-                                        border: 'none',
-                                        borderRadius: '8px',
-                                        cursor: cargando ? 'not-allowed' : 'pointer',
-                                        fontWeight: '600',
-                                        fontSize: '14px',
-                                        opacity: cargando ? 0.7 : 1,
-                                    }}
-                                >
-                                    {cargando
-                                        ? 'Guardando...'
-                                        : (modoEdicion ? 'Actualizar' : 'Registrar')}
-                                </button>
-
-                                {modoEdicion && (
-                                    <button
-                                        type="button"
-                                        onClick={resetForm}
-                                        style={{
-                                            flex: 1,
-                                            padding: '10px',
-                                            backgroundColor: '#fff',
-                                            color: '#6b7280',
-                                            border: '1.5px solid #e5e7eb',
-                                            borderRadius: '8px',
-                                            cursor: 'pointer',
-                                            fontWeight: '500',
-                                            fontSize: '14px',
-                                        }}
-                                    >
-                                        Cancelar
-                                    </button>
-                                )}
-
-                            </div>
-
-                        </form>
-
+                    {/* Categoría */}
+                    <div style={{ gridColumn:'1/-1' }}>
+                        <label style={lbl}>Categoría *</label>
+                        <select name="id_categoria" value={form.id_categoria} onChange={handleInputChange} required style={inp}>
+                            <option value="">-- Seleccionar --</option>
+                            {categorias.map(c => (
+                                <option key={c.id} value={c.id}>{c.nombre}</option>
+                            ))}
+                        </select>
                     </div>
 
-                    {/* ── LISTA DE VEHÍCULOS ───────────────── */}
+                    {/* Marca */}
                     <div>
-                        <h2 style={{
-                            margin: '0 0 4px',
-                            fontSize: '20px',
-                            fontWeight: '700',
-                            color: '#111827',
-                        }}>
-                            Vehículos registrados
-                        </h2>
-                        <p style={{ margin: '0 0 16px', color: '#9ca3af', fontSize: '13px' }}>
-                            {vehiculos.length} en total
-                        </p>
-
-                        <ListaVehiculos />
+                        <label style={lbl}>Marca *</label>
+                        <input type="text" name="marca" value={form.marca} onChange={handleInputChange}
+                            required placeholder="Honda" style={inp} />
                     </div>
 
+                    {/* Modelo */}
+                    <div>
+                        <label style={lbl}>Modelo *</label>
+                        <input type="text" name="modelo" value={form.modelo} onChange={handleInputChange}
+                            required placeholder="CB190" style={inp} />
+                    </div>
+
+                    {/* Placa */}
+                    <div>
+                        <label style={lbl}>Placa *</label>
+                        <input type="text" name="placa" value={form.placa} onChange={handleInputChange}
+                            required placeholder="ABC-123" maxLength={15}
+                            style={{ ...inp, textTransform:'uppercase' }} />
+                    </div>
+
+                    {/* Año */}
+                    <div>
+                        <label style={lbl}>Año *</label>
+                        <input type="number" name="anio" value={form.anio} onChange={handleInputChange}
+                            required min={1990} max={new Date().getFullYear()} style={inp} />
+                    </div>
+
+                    {/* Color */}
+                    <div>
+                        <label style={lbl}>Color</label>
+                        <input type="text" name="color" value={form.color} onChange={handleInputChange}
+                            placeholder="Rojo" style={inp} />
+                    </div>
+
+                    {/* Precio */}
+                    <div>
+                        <label style={lbl}>Precio diario (S/) *</label>
+                        <input type="number" name="precio_diario" value={form.precio_diario} onChange={handleInputChange}
+                            required min={0.01} step={0.01} placeholder="50.00" style={inp} />
+                    </div>
+
+                    {/* Combustible */}
+                    <div>
+                        <label style={lbl}>Combustible</label>
+                        <select name="tipo_combustible" value={form.tipo_combustible} onChange={handleInputChange} style={inp}>
+                            <option value="">-- Tipo --</option>
+                            {COMBUSTIBLES.map(c => <option key={c}>{c}</option>)}
+                        </select>
+                    </div>
+
+                    {/* Transmisión */}
+                    <div>
+                        <label style={lbl}>Transmisión</label>
+                        <select name="transmision" value={form.transmision} onChange={handleInputChange} style={inp}>
+                            <option value="">-- Tipo --</option>
+                            {TRANSMISIONES.map(t => <option key={t}>{t}</option>)}
+                        </select>
+                    </div>
+
+                    {/* Pasajeros */}
+                    <div>
+                        <label style={lbl}>Pasajeros</label>
+                        <input type="number" name="capacidad_pasajeros" value={form.capacidad_pasajeros}
+                            onChange={handleInputChange} min={1} max={20} style={inp} />
+                    </div>
+
+                    {/* Kilometraje */}
+                    <div>
+                        <label style={lbl}>Kilometraje (km)</label>
+                        <input type="number" name="kilometraje" value={form.kilometraje}
+                            onChange={handleInputChange} min={0} step={0.01} style={inp} />
+                    </div>
+
+                    {/* Estado */}
+                    <div style={{ gridColumn:'1/-1' }}>
+                        <label style={lbl}>Estado</label>
+                        <select name="estado" value={form.estado} onChange={handleInputChange} style={inp}>
+                            {ESTADOS.map(e => (
+                                <option key={e} value={e}>
+                                    {e.charAt(0).toUpperCase() + e.slice(1)}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
 
-            </div>
-
+                {/* Botones */}
+                <div style={{ display:'flex', gap:'0.5rem', marginTop:'1rem' }}>
+                    <button type="submit"
+                        style={{ flex:1, padding:'0.65rem', background:'#1a1a2e', color:'#fff', border:'none', borderRadius:8, fontWeight:600, cursor:'pointer' }}>
+                        {modoEdicion ? 'Actualizar' : 'Registrar'}
+                    </button>
+                    {modoEdicion && (
+                        <button type="button" onClick={resetForm}
+                            style={{ flex:1, padding:'0.65rem', background:'#f3f4f6', color:'#374151', border:'none', borderRadius:8, fontWeight:600, cursor:'pointer' }}>
+                            Cancelar
+                        </button>
+                    )}
+                </div>
+            </form>
         </div>
-
     );
-
 }
+
+export default Vehiculo;

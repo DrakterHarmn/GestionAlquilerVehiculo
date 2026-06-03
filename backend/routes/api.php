@@ -1,11 +1,60 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\VehiculoController;
+use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\ReservaController;
+use App\Http\Controllers\AlquilerController;
+use App\Http\Controllers\PagoController;
+use App\Http\Controllers\CajaController;
+use App\Http\Controllers\InspeccionController;
+use App\Http\Controllers\MantenimientoController;
 
-// GET    /api/vehiculos          → index
-// POST   /api/vehiculos          → store
-// GET    /api/vehiculos/{id}     → show
-// PUT    /api/vehiculos/{id}     → update
-// DELETE /api/vehiculos/{id}     → destroy
-Route::apiResource('vehiculos', VehiculoController::class);
+// ══════════════════════════════════════════════════════════════
+// RUTAS PÚBLICAS (sin autenticación)
+// ══════════════════════════════════════════════════════════════
+Route::post('/login', [AuthController::class, 'login']);
+
+// ══════════════════════════════════════════════════════════════
+// RUTAS PROTEGIDAS (requieren token Sanctum)
+// ══════════════════════════════════════════════════════════════
+Route::middleware('auth:sanctum')->group(function () {
+
+    // Auth
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/me',      [AuthController::class, 'me']);
+
+    // Vehículos
+    Route::apiResource('vehiculos', VehiculoController::class);
+
+    // Clientes
+    Route::apiResource('clientes', ClienteController::class);
+
+    // Reservas
+    Route::apiResource('reservas', ReservaController::class);
+
+    // Alquileres
+    Route::apiResource('alquileres', AlquilerController::class)->only(['index','store','show']);
+    Route::put('/alquileres/{alquiler}/finalizar', [AlquilerController::class, 'finalizar']);
+
+    // Pagos
+    Route::get('/pagos',               [PagoController::class, 'index']);
+    Route::post('/pagos',              [PagoController::class, 'store']);
+    Route::put('/pagos/{pago}/anular', [PagoController::class, 'anular']);
+
+    // Caja
+    Route::get('/caja/estado',             [CajaController::class, 'estado']);
+    Route::post('/caja/abrir',             [CajaController::class, 'abrir']);
+    Route::put('/caja/{caja}/cerrar',      [CajaController::class, 'cerrar']);
+    Route::get('/caja/{caja}/movimientos', [CajaController::class, 'movimientos']);
+
+    // Inspecciones
+    Route::post('/inspecciones',                      [InspeccionController::class, 'store']);
+    Route::get('/alquileres/{alquiler}/inspecciones', [InspeccionController::class, 'porAlquiler']);
+
+    // Mantenimientos
+    Route::get('/mantenimientos',                      [MantenimientoController::class, 'index']);
+    Route::post('/mantenimientos',                     [MantenimientoController::class, 'store']);
+    Route::put('/mantenimientos/{mantenimiento}',      [MantenimientoController::class, 'update']);
+});

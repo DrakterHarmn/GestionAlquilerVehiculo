@@ -1,10 +1,8 @@
 import { useContext } from 'react';
-import VehiculoContext from '../context/VehiculoProvider';
+import VehiculoContext from '../context/VehiculoContext';
 
-const useVehiculo = () => useContext(VehiculoContext);
+const useVehiculo = () => {
+    return useContext(VehiculoContext);
+};
 
 export default useVehiculo;
-
-// ¿Cómo se usa en cualquier componente?
-// const { vehiculos, crearVehiculo, eliminarVehiculo } = useVehiculo();
-// Una línea da acceso a TODO el Provider
