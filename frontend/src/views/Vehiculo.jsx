@@ -70,6 +70,21 @@ function Vehiculo() {
                             style={{ ...inp, textTransform:'uppercase' }} />
                     </div>
 
+                    {/* Imagen */}
+                    <div style={{ gridColumn:'1/-1' }}>
+                        <label style={lbl}>Imagen del vehículo</label>
+                        <input
+                            type="file"
+                            name="imagen"
+                            accept="image/*"
+                            onChange={handleInputChange}
+                            style={inp}
+                        />
+                        <p style={{ fontSize:11, color:'#9ca3af', marginTop:4 }}>
+                            Formatos permitidos: JPG, PNG, WEBP. Recomendado: imagen sin fondo.
+                        </p>
+                    </div>
+
                     {/* Año */}
                     <div>
                         <label style={lbl}>Año *</label>

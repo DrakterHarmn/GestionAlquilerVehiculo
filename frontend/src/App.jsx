@@ -9,7 +9,8 @@ import Login from './views/Login';
 import Vehiculo from './views/Vehiculo';
 import ListaVehiculos from './views/ListaVehiculos';
 import { ClientesView } from './views/Cliente';
- 
+import PanelCliente from './views/PanelCliente';
+
 const MENU = [
     { id:'dashboard',       label:'Dashboard'   },
     { id:'vehiculos',       label:'Vehículos'   },
@@ -62,11 +63,15 @@ function ProximaVista({ nombre }) {
 }
  
 function Layout() {
-    const { auth, logout }   = useAuth();
+    const { auth, logout, esAdmin }   = useAuth();
     const [seccion, setSeccion] = useState('dashboard');
     const [collapsed, setCollapsed] = useState(false);
  
     if (!auth) return <Login />;
+
+    if (!esAdmin()) {
+        return <PanelCliente />;
+    }
  
     const renderSeccion = () => {
         switch (seccion) {

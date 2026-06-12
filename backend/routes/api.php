@@ -10,11 +10,13 @@ use App\Http\Controllers\PagoController;
 use App\Http\Controllers\CajaController;
 use App\Http\Controllers\InspeccionController;
 use App\Http\Controllers\MantenimientoController;
+use App\Http\Controllers\CategoriaVehiculoController;
 
 // ══════════════════════════════════════════════════════════════
 // RUTAS PÚBLICAS (sin autenticación)
 // ══════════════════════════════════════════════════════════════
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register-cliente', [AuthController::class, 'registerCliente']);
 
 // ══════════════════════════════════════════════════════════════
 // RUTAS PROTEGIDAS (requieren token Sanctum)
@@ -57,4 +59,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/mantenimientos',                      [MantenimientoController::class, 'index']);
     Route::post('/mantenimientos',                     [MantenimientoController::class, 'store']);
     Route::put('/mantenimientos/{mantenimiento}',      [MantenimientoController::class, 'update']);
+
+    // Categorías de vehículos
+    Route::get('/categorias-vehiculos',     [CategoriaVehiculoController::class, 'index']);
 });

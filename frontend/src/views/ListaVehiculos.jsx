@@ -40,6 +40,34 @@ function ListaVehiculos() {
                             </span>
                         </div>
 
+                        <div style={{
+                            height:180,
+                            background:'#fff',
+                            display:'flex',
+                            justifyContent:'center',
+                            alignItems:'center',
+                            borderBottom:'1px solid #e5e7eb'
+                        }}>
+                            {v.imagen ? (
+                                <img
+                                    src={`http://127.0.0.1:8000/storage/${v.imagen}`}
+                                    alt={`${v.marca} ${v.modelo}`}
+                                    style={{
+                                        width:'100%',
+                                        height:'100%',
+                                        objectFit:'contain',
+                                        padding:'0.75rem',
+                                        boxSizing:'border-box'
+                                    }}
+                                />
+                            ) : (
+                                <span style={{ color:'#9ca3af', fontSize:13 }}>
+                                    Sin imagen
+                                </span>
+                            )}
+                        </div>
+
+
                         {/* Body */}
                         <div style={{ padding:'0.9rem 1rem' }}>
                             <p style={{ margin:'0 0 4px', fontWeight:700, fontSize:15 }}>{v.marca} {v.modelo}</p>
