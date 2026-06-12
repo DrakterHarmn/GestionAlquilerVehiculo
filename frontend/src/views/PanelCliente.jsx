@@ -510,7 +510,7 @@ export default function PanelCliente() {
             <header style={{ background: '#111827', color: '#fff', padding: '0.7rem 1rem', display: 'grid', gridTemplateColumns: '170px 1fr 280px', gap: '1rem', alignItems: 'center', boxShadow: '0 2px 10px rgba(0,0,0,.15)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <strong style={{ fontSize: 22 }}><span style={{ color: '#fff' }}>rent</span><span style={{ color: '#ffb84d' }}>Car</span></strong>
-                    <span style={{ fontSize: 12, lineHeight: 1.1 }}>Enviar a<br /><b>Perú</b></span>
+                    
                 </div>
 
                 <div style={{ display: 'flex', width: '100%', maxWidth: 720 }}>
@@ -522,7 +522,7 @@ export default function PanelCliente() {
                 <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 16 }}>
                     <div style={{ fontSize: 12 }}>
                         Hola, {perfil?.nombre || auth?.nombre}<br />
-                        <b>Cuenta y reservas</b>
+                        
                     </div>
                     <button onClick={logout} style={{ background: '#111827', color: '#fff', border: '1px solid #fff', padding: '0.6rem 1rem', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }}>Cerrar sesión</button>
                 </div>
