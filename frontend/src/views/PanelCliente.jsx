@@ -224,7 +224,6 @@ function Placeholder({ titulo }) {
     return (
         <div style={{ background:'#fff', borderRadius:16, padding:'2rem', boxShadow:'0 3px 14px rgba(0,0,0,.08)' }}>
             <h2>{titulo}</h2>
-            <p style={{ color:'#777' }}>Este módulo estará conectado a la API correspondiente.</p>
         </div>
     );
 }

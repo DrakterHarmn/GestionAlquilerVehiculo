@@ -71,7 +71,7 @@ function Layout() {
 
     if (!esAdmin()) {
         return <PanelCliente />;
-    }
+        }
  
     const renderSeccion = () => {
         switch (seccion) {
@@ -100,7 +100,7 @@ function Layout() {
     };
  
     return (
-        <div style={{ display:'flex', minHeight:'100vh', background:'#f5f4f0' }}>
+        <div style={{ display:'flex', width:'100%', minHeight:'100vh', background:'#f5f4f0', overflow:'hidden' }}>
             {/* Sidebar */}
             <aside style={{ width: collapsed ? 64 : 220, background:'#1a1a2e', transition:'width 0.2s', display:'flex', flexDirection:'column', flexShrink:0 }}>
                 <div style={{ padding:'1.25rem 1rem', borderBottom:'1px solid rgba(255,255,255,0.08)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
@@ -128,7 +128,7 @@ function Layout() {
             </aside>
  
             {/* Contenido */}
-            <main style={{ flex:1, padding:'2rem', overflowY:'auto' }}>
+            <main style={{ flex:1, minWidth: 0, width: '100%', minHeight: '100vh', padding: '1rem', overflowY: 'auto',boxSizing: 'border-box' }}>
                 {renderSeccion()}
             </main>
         </div>
