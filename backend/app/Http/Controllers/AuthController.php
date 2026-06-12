@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
-    // POST /api/login
     public function login(Request $request)
     {
         $request->validate([
@@ -19,7 +18,6 @@ class AuthController extends Controller
             'password' => 'required|string|min:6',
         ]);
 
-        // Buscar usuario por correo en la tabla personas
         $usuario = Usuario::with('persona', 'rol')
             ->whereHas('persona', function ($q) use ($request) {
                 $q->where('correo', $request->correo);
@@ -27,55 +25,57 @@ class AuthController extends Controller
             ->where('estado', true)
             ->first();
 
-        // Verificar existencia y contraseña
         if (!$usuario || !Hash::check($request->password, $usuario->password)) {
             return response()->json([
                 'message' => 'Correo o contraseña incorrectos.',
             ], 401);
         }
 
-        // Eliminar tokens anteriores (una sesión activa a la vez)
         $usuario->tokens()->delete();
-
-        // Generar token Sanctum
         $token = $usuario->createToken('auth_token')->plainTextToken;
+        $cliente = Cliente::with('persona')->where('id_persona', $usuario->id_persona)->first();
 
         return response()->json([
             'token' => $token,
             'usuario' => [
                 'id' => $usuario->id,
-                'nombre' => $usuario->persona->nombres . ' ' . $usuario->persona->apellidos,
+                'nombre' => trim(($usuario->persona->nombres ?? '') . ' ' . ($usuario->persona->apellidos ?? '')),
                 'correo' => $usuario->persona->correo,
                 'usuario' => $usuario->usuario,
                 'id_rol' => $usuario->id_rol,
                 'rol' => $usuario->rol->nombre,
                 'persona' => $usuario->persona,
-            ]
+                'cliente' => $cliente,
+            ],
         ]);
     }
 
-    // POST /api/logout
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
-        return response()->json(['message' => 'Sesión cerrada correctamente.']);
-    }
 
-    // GET /api/me
-    public function me(Request $request)
-    {
-        $usuario = $request->user()->load('persona', 'rol');
         return response()->json([
-            'id'      => $usuario->id,
-            'nombre'  => $usuario->persona->nombres . ' ' . $usuario->persona->apellidos,
-            'correo'  => $usuario->persona->correo,
-            'usuario' => $usuario->usuario,
-            'rol'     => $usuario->rol->nombre,
-            'id_rol'  => $usuario->id_rol,
+            'message' => 'Sesión cerrada correctamente.',
         ]);
     }
 
-    // POST /api/register-cliente
+    public function me(Request $request)
+    {
+        $usuario = $request->user()->load('persona', 'rol');
+        $cliente = Cliente::with('persona')->where('id_persona', $usuario->id_persona)->first();
+
+        return response()->json([
+            'id' => $usuario->id,
+            'nombre' => trim(($usuario->persona->nombres ?? '') . ' ' . ($usuario->persona->apellidos ?? '')),
+            'correo' => $usuario->persona->correo,
+            'usuario' => $usuario->usuario,
+            'rol' => $usuario->rol->nombre,
+            'id_rol' => $usuario->id_rol,
+            'persona' => $usuario->persona,
+            'cliente' => $cliente,
+        ]);
+    }
+
     public function registerCliente(Request $request)
     {
         $request->validate([
@@ -93,10 +93,7 @@ class AuthController extends Controller
 
         $rolCliente = Rol::firstOrCreate(
             ['nombre' => 'cliente'],
-            [
-                'descripcion' => 'Cliente del sistema',
-                'estado' => true
-            ]
+            ['descripcion' => 'Cliente del sistema', 'estado' => true]
         );
 
         $persona = Persona::create([
@@ -132,7 +129,7 @@ class AuthController extends Controller
                 'rol' => $rolCliente->nombre,
                 'id_rol' => $rolCliente->id,
             ],
-            'cliente' => $cliente,
+            'cliente' => $cliente->load('persona'),
         ], 201);
-    }    
+    }
 }

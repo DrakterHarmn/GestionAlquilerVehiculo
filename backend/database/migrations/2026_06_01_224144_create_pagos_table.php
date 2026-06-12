@@ -17,8 +17,10 @@ return new class extends Migration
             $table->decimal('monto', 10, 2);
             // efectivo, yape, plin, transferencia, tarjeta
             $table->string('metodo_pago', 30);
+            $table->string('nro_operacion', 80)->nullable();
+            $table->string('comprobante')->nullable();
             $table->datetime('fecha_pago');
-            // pendiente, pagado, anulado
+            // pendiente, aprobado, rechazado, anulado
             $table->string('estado', 30)->default('pendiente');
             $table->text('observacion')->nullable();
         });

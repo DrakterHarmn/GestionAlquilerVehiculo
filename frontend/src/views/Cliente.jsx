@@ -138,11 +138,11 @@ export function ClientesView() {
                                         <td style={{ padding: '0.6rem 0.75rem', display: 'flex', gap: 4 }}>
                                             <button onClick={() => editarCliente(c)}
                                                 style={{ background: '#eff6ff', color: '#3b82f6', border: '1px solid #bfdbfe', borderRadius: 6, padding: '3px 8px', fontSize: 12, cursor: 'pointer' }}>
-                                            
+                                                    Editar
                                             </button>
                                             <button onClick={() => desactivarCliente(c.id)}
                                                 style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 6, padding: '3px 8px', fontSize: 12, cursor: 'pointer' }}>
-                                                
+                                                    Desactivar
                                             </button>
                                         </td>
                                     </tr>

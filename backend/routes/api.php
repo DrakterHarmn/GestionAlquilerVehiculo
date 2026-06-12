@@ -43,6 +43,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Pagos
     Route::get('/pagos',               [PagoController::class, 'index']);
     Route::post('/pagos',              [PagoController::class, 'store']);
+    Route::put('/pagos/{pago}/aprobar', [PagoController::class, 'aprobar']);
+    Route::put('/pagos/{pago}/rechazar', [PagoController::class, 'rechazar']);
     Route::put('/pagos/{pago}/anular', [PagoController::class, 'anular']);
 
     // Caja
