@@ -2,7 +2,18 @@ import { useEffect, useMemo, useState } from 'react';
 import useAuth from '../hooks/useAuth';
 import clienteAxios from '../config/axios';
 
-const API_STORAGE = 'http://127.0.0.1:8000/storage';
+const API_BACKEND = 'http://127.0.0.1:8000';
+
+function imagenUrl(path) {
+    if (!path) return '/vehiculo-default.png';
+    const img = String(path).trim();
+    if (img.startsWith('http://') || img.startsWith('https://')) return img;
+    return `${API_BACKEND}/storage/${img.replace(/^\/?storage\//, '')}`;
+}
+
+function hoyISO() {
+    return new Date().toISOString().slice(0, 10);
+}
 
 const MENU_CLIENTE = [
     { id: 'dashboard-cliente', label: 'Inicio' },
@@ -156,21 +167,202 @@ function BuscarVehiculos({ vehiculos, onReservar }) {
             ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: '1rem' }}>
                     {vehiculosFiltrados.map(v => (
-                        <div key={v.id} style={{ background: '#fff', borderRadius: 18, overflow: 'hidden', boxShadow: '0 3px 14px rgba(0,0,0,.08)', border: '1px solid #f1f1f1' }}>
-                            <div style={{ height: 180, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid #f3f4f6' }}>
-                                {v.imagen ? <img src={`${API_STORAGE}/${v.imagen}`} alt={`${v.marca} ${v.modelo}`} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '0.75rem', boxSizing: 'border-box' }} /> : <div style={{ color: '#bbb', fontSize: 13 }}>Sin imagen</div>}
+                        <div key={v.id} style={{
+                            background: '#fff',
+                            borderRadius: 16,
+                            overflow: 'hidden',
+                            boxShadow: '0 4px 15px rgba(0,0,0,.08)',
+                            textAlign: 'center',
+                            padding: '1rem'
+                        }}>
+                            <img
+                                src={imagenUrl(v.imagen)}
+                                alt={`${v.marca} ${v.modelo}`}
+                                onError={(e) => {
+                                    e.currentTarget.onerror = null;
+                                    e.currentTarget.src = '/vehiculo-default.png';
+                                }}
+                                style={{ width: '100%', height: '180px', objectFit: 'contain' }}
+                            />
+
+                            <h3 style={{ marginTop: '1rem', color: '#1a2f6b', fontSize: '22px' }}>
+                                {v.marca} {v.modelo}
+                            </h3>
+
+                            <p style={{ color: '#777' }}>Placa: {v.placa}</p>
+
+                            <div style={{
+                                background: v.estado === 'disponible' ? '#dcfce7' : '#fee2e2',
+                                color: v.estado === 'disponible' ? '#166534' : '#991b1b',
+                                padding: '6px 12px',
+                                borderRadius: 20,
+                                display: 'inline-block',
+                                fontWeight: 'bold',
+                                marginBottom: '1rem'
+                            }}>
+                                {v.estado}
                             </div>
-                            <div style={{ padding: '1rem' }}>
-                                <span style={{ display: 'inline-block', background: '#fff1e8', color: '#ff4d00', padding: '0.25rem 0.6rem', borderRadius: 20, fontSize: 12, fontWeight: 700, marginBottom: 8 }}>{v.categoria?.nombre || 'Sin categoría'}</span>
-                                <h3 style={{ margin: '0 0 4px', color: '#111827' }}>{v.marca} {v.modelo}</h3>
-                                <p style={{ color: '#777', margin: '0 0 8px', fontSize: 13 }}>Año {v.anio} · {v.transmision || '—'}</p>
-                                <strong style={{ color: '#ff4d00', fontSize: 20 }}>{money(v.precio_diario)}<span style={{ fontSize: 12, color: '#777', fontWeight: 400 }}> / día</span></strong>
-                                <button onClick={() => onReservar(v)} style={{ ...btnPrimary, marginTop: '1rem', width: '100%' }}>Reservar ahora</button>
+
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'center',
+                                gap: '1rem',
+                                flexWrap: 'wrap',
+                                margin: '1rem 0',
+                                color: '#1a2f6b',
+                                fontWeight: 600
+                            }}>
+                                <span>🚗 {v.categoria?.nombre || 'Sin categoría'}</span>
+                                <span>👥 {v.capacidad_pasajeros || 1}</span>
+                                <span>⚙️ {v.transmision || '—'}</span>
+                                <span>⛽ {v.tipo_combustible || '—'}</span>
                             </div>
+
+                            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#16a34a' }}>
+                                S/ {parseFloat(v.precio_diario || 0).toFixed(2)}
+                            </div>
+
+                            <div style={{ color: '#666', marginBottom: '1rem' }}>por día</div>
+
+                            <button
+                                onClick={() => onReservar(v)}
+                                style={{
+                                    width: '100%',
+                                    padding: '0.8rem',
+                                    background: '#ff4d00',
+                                    color: '#fff',
+                                    border: 'none',
+                                    borderRadius: 10,
+                                    fontWeight: 700,
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Reservar ahora
+                            </button>
                         </div>
                     ))}
                 </div>
             )}
+        </div>
+    );
+}
+
+function ModalReserva({ vehiculo, fechaFin, setFechaFin, onCerrar, onConfirmar, enviando }) {
+    const hoy = hoyISO();
+
+    return (
+        <div style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,.55)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 9999,
+            padding: '1rem'
+        }}>
+            <div style={{
+                background: '#fff',
+                borderRadius: 18,
+                width: '100%',
+                maxWidth: 430,
+                boxShadow: '0 20px 60px rgba(0,0,0,.25)',
+                overflow: 'hidden'
+            }}>
+                <div style={{
+                    background: '#111827',
+                    color: '#fff',
+                    padding: '1rem 1.3rem'
+                }}>
+                    <h2 style={{ margin: 0, fontSize: 20 }}>Reservar vehículo</h2>
+                    <p style={{ margin: '0.3rem 0 0', color: '#d1d5db', fontSize: 13 }}>
+                        Seleccione la fecha de finalización del alquiler.
+                    </p>
+                </div>
+
+                <div style={{ padding: '1.4rem' }}>
+                    <div style={{ display: 'flex', gap: 14, alignItems: 'center', marginBottom: '1rem' }}>
+                        <img
+                            src={imagenUrl(vehiculo?.imagen)}
+                            alt={`${vehiculo?.marca} ${vehiculo?.modelo}`}
+                            onError={(e) => {
+                                e.currentTarget.onerror = null;
+                                e.currentTarget.src = '/vehiculo-default.png';
+                            }}
+                            style={{
+                                width: 95,
+                                height: 70,
+                                objectFit: 'contain',
+                                background: '#f9fafb',
+                                borderRadius: 12,
+                                border: '1px solid #e5e7eb'
+                            }}
+                        />
+
+                        <div>
+                            <h3 style={{ margin: 0, color: '#111827' }}>
+                                {vehiculo?.marca} {vehiculo?.modelo}
+                            </h3>
+                            <p style={{ margin: '0.25rem 0 0', color: '#6b7280', fontSize: 13 }}>
+                                Placa: {vehiculo?.placa}
+                            </p>
+                            <b style={{ color: '#16a34a' }}>
+                                {money(vehiculo?.precio_diario)} / día
+                            </b>
+                        </div>
+                    </div>
+
+                    <label style={{ fontWeight: 800, color: '#374151', fontSize: 13 }}>
+                        Fecha de inicio
+                    </label>
+                    <input
+                        type="date"
+                        value={hoy}
+                        disabled
+                        style={{ ...input, marginTop: 6, background: '#f3f4f6', color: '#6b7280' }}
+                    />
+
+                    <div style={{ marginTop: '1rem' }}>
+                        <label style={{ fontWeight: 800, color: '#374151', fontSize: 13 }}>
+                            Fecha de finalización
+                        </label>
+                        <input
+                            type="date"
+                            min={hoy}
+                            value={fechaFin}
+                            onChange={(e) => setFechaFin(e.target.value)}
+                            style={{ ...input, marginTop: 6 }}
+                        />
+                    </div>
+
+                    <div style={{
+                        background: '#fff7ed',
+                        border: '1px solid #fed7aa',
+                        color: '#9a3412',
+                        borderRadius: 12,
+                        padding: '0.8rem',
+                        marginTop: '1rem',
+                        fontSize: 13
+                    }}>
+                        La fecha de inicio se registra automáticamente con la fecha actual.
+                    </div>
+
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'flex-end',
+                        gap: 10,
+                        marginTop: '1.3rem'
+                    }}>
+                        <button onClick={onCerrar} disabled={enviando} style={btnSoft}>
+                            Cancelar
+                        </button>
+
+                        <button onClick={onConfirmar} disabled={enviando} style={btnPrimary}>
+                            {enviando ? 'Registrando...' : 'Confirmar reserva'}
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }
@@ -228,10 +420,6 @@ function FormPagoCliente({ alquileres, onPagoCreado }) {
     const alquilerSeleccionado = alquileresPagables.find(a => String(a.id) === String(form.id_alquiler));
     const montoAutomatico = Number(alquilerSeleccionado?.monto_total || 0);
 
-    const seleccionarAlquiler = (id) => {
-        setForm({ ...form, id_alquiler: id });
-    };
-
     const enviarPago = async (e) => {
         e.preventDefault();
 
@@ -266,7 +454,12 @@ function FormPagoCliente({ alquileres, onPagoCreado }) {
             <div style={{ display: 'grid', gridTemplateColumns: '1.1fr .7fr', gap: '1rem', alignItems: 'start' }}>
                 <div style={{ display: 'grid', gap: '0.8rem' }}>
                     <label style={{ fontWeight: 800, color: '#6b7280' }}>Alquiler a pagar</label>
-                    <select required value={form.id_alquiler} onChange={e => seleccionarAlquiler(e.target.value)} style={input}>
+                    <select
+                        required
+                        value={form.id_alquiler}
+                        onChange={e => setForm({ ...form, id_alquiler: e.target.value })}
+                        style={input}
+                    >
                         <option value="">Seleccione alquiler</option>
                         {alquileresPagables.map(a => (
                             <option key={a.id} value={a.id}>
@@ -285,6 +478,7 @@ function FormPagoCliente({ alquileres, onPagoCreado }) {
                     )}
 
                     <label style={{ fontWeight: 800, color: '#6b7280' }}>Forma de pago</label>
+
                     <div style={{ display: 'grid', gap: '0.8rem' }}>
                         {[
                             ['yape', 'Yape'],
@@ -293,15 +487,35 @@ function FormPagoCliente({ alquileres, onPagoCreado }) {
                             ['tarjeta', 'Pago con tarjeta'],
                             ['efectivo', 'Efectivo'],
                         ].map(([value, label]) => (
-                            <label key={value} style={{ display: 'flex', alignItems: 'center', gap: 12, border: '1px solid #e5e7eb', borderRadius: 12, padding: '0.85rem', cursor: 'pointer', background: form.metodo_pago === value ? '#fff7ed' : '#fff' }}>
-                                <input type="radio" name="metodo_pago" value={value} checked={form.metodo_pago === value} onChange={e => setForm({ ...form, metodo_pago: e.target.value })} />
+                            <label key={value} style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 12,
+                                border: '1px solid #e5e7eb',
+                                borderRadius: 12,
+                                padding: '0.85rem',
+                                cursor: 'pointer',
+                                background: form.metodo_pago === value ? '#fff7ed' : '#fff'
+                            }}>
+                                <input
+                                    type="radio"
+                                    name="metodo_pago"
+                                    value={value}
+                                    checked={form.metodo_pago === value}
+                                    onChange={e => setForm({ ...form, metodo_pago: e.target.value })}
+                                />
                                 <b>{label}</b>
                             </label>
                         ))}
                     </div>
 
                     {form.metodo_pago !== 'efectivo' && (
-                        <input placeholder="Nro. operación" value={form.nro_operacion} onChange={e => setForm({ ...form, nro_operacion: e.target.value })} style={input} />
+                        <input
+                            placeholder="Nro. operación"
+                            value={form.nro_operacion}
+                            onChange={e => setForm({ ...form, nro_operacion: e.target.value })}
+                            style={input}
+                        />
                     )}
                 </div>
 
@@ -352,12 +566,6 @@ function MisPagos({ pagos, alquileres, onPagoCreado }) {
                         <p>Fecha: {formatDate(p.fecha_pago)} | Método: <b>{p.metodo_pago}</b></p>
                         <p>Monto: <b>{money(p.monto)}</b> | Estado: <b style={{ color: estadoColor[p.estado] || '#111827' }}>{p.estado}</b></p>
                         {p.nro_operacion && <p>Nro. operación: <b>{p.nro_operacion}</b></p>}
-                        {p.comprobante && (
-                            <a href={`${API_STORAGE}/${p.comprobante}`} target="_blank" rel="noreferrer" style={{ color: '#2563eb', fontWeight: 700 }}>
-                                Ver comprobante
-                            </a>
-                        )}
-                        {p.observacion && <p>Observación: {p.observacion}</p>}
                     </div>
                 ))}
             </div>
@@ -384,9 +592,29 @@ function MiPerfil({ perfil }) {
             <h2 style={{ marginTop: 0 }}>Mi Perfil</h2>
 
             <div style={{ background: '#fff', borderRadius: 18, overflow: 'hidden', boxShadow: '0 4px 18px rgba(0,0,0,.10)', width: '100%', maxWidth: '100%' }}>
-                <div style={{ height: 135, background: 'linear-gradient(135deg, rgba(186,230,253,.9), rgba(224,242,254,.9)), url("/banner-autos.png")', backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative' }}>
-                    <div style={{ position: 'absolute', left: 32, bottom: -42, width: 90, height: 90, borderRadius: '50%', background: '#d1d5db', border: '5px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 42, boxShadow: '0 4px 10px rgba(0,0,0,.12)' }}>
-                        
+                <div style={{
+                    height: 135,
+                    background: 'linear-gradient(135deg, rgba(186,230,253,.9), rgba(224,242,254,.9)), url("/banner-autos.png")',
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    position: 'relative'
+                }}>
+                    <div style={{
+                        position: 'absolute',
+                        left: 32,
+                        bottom: -42,
+                        width: 90,
+                        height: 90,
+                        borderRadius: '50%',
+                        background: '#d1d5db',
+                        border: '5px solid #fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 42,
+                        boxShadow: '0 4px 10px rgba(0,0,0,.12)'
+                    }}>
+                        👤
                     </div>
                 </div>
 
@@ -421,11 +649,16 @@ export default function PanelCliente() {
     const [perfil, setPerfil] = useState(auth);
     const [cargando, setCargando] = useState(false);
 
+    const [modalReserva, setModalReserva] = useState(false);
+    const [vehiculoSeleccionado, setVehiculoSeleccionado] = useState(null);
+    const [fechaFin, setFechaFin] = useState('');
+    const [registrandoReserva, setRegistrandoReserva] = useState(false);
+
     const cargarDatos = async () => {
         setCargando(true);
 
         try {
-            const [vehRes, resRes, alqRes, pagRes, meRes] = await Promise.all([
+            const respuestas = await Promise.allSettled([
                 clienteAxios.get('/vehiculos'),
                 clienteAxios.get('/reservas'),
                 clienteAxios.get('/alquileres'),
@@ -433,11 +666,14 @@ export default function PanelCliente() {
                 clienteAxios.get('/me'),
             ]);
 
-            setVehiculos(Array.isArray(vehRes.data) ? vehRes.data : []);
-            setReservas(Array.isArray(resRes.data) ? resRes.data : []);
-            setAlquileres(Array.isArray(alqRes.data) ? alqRes.data : []);
-            setPagos(Array.isArray(pagRes.data) ? pagRes.data : []);
-            setPerfil(meRes.data || auth);
+            const data = (i, fallback = []) =>
+                respuestas[i].status === 'fulfilled' ? respuestas[i].value.data : fallback;
+
+            setVehiculos(Array.isArray(data(0)) ? data(0) : []);
+            setReservas(Array.isArray(data(1)) ? data(1) : []);
+            setAlquileres(Array.isArray(data(2)) ? data(2) : []);
+            setPagos(Array.isArray(data(3)) ? data(3) : []);
+            setPerfil(data(4, auth) || auth);
         } catch (error) {
             console.error('Error al cargar datos del cliente', error.response?.data || error);
         } finally {
@@ -450,26 +686,52 @@ export default function PanelCliente() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const reservarVehiculo = async (vehiculo) => {
-        const fecha_inicio = prompt('Ingrese fecha de inicio (YYYY-MM-DD):');
-        if (!fecha_inicio) return;
+    const reservarVehiculo = (vehiculo) => {
+        setVehiculoSeleccionado(vehiculo);
+        setFechaFin('');
+        setModalReserva(true);
+    };
 
-        const fecha_fin = prompt('Ingrese fecha de fin (YYYY-MM-DD):');
-        if (!fecha_fin) return;
+    const confirmarReserva = async () => {
+        const hoy = hoyISO();
+
+        if (!vehiculoSeleccionado) {
+            alert('No se seleccionó ningún vehículo.');
+            return;
+        }
+
+        if (!fechaFin) {
+            alert('Seleccione una fecha de finalización.');
+            return;
+        }
+
+        if (fechaFin < hoy) {
+            alert('La fecha de finalización no puede ser menor a la fecha actual.');
+            return;
+        }
 
         try {
+            setRegistrandoReserva(true);
+
             await clienteAxios.post('/reservas', {
-                id_vehiculo: vehiculo.id,
-                fecha_inicio,
-                fecha_fin,
+                id_vehiculo: vehiculoSeleccionado.id,
+                fecha_inicio: hoy,
+                fecha_fin: fechaFin,
             });
 
             alert('Reserva registrada correctamente.');
+
+            setModalReserva(false);
+            setVehiculoSeleccionado(null);
+            setFechaFin('');
+
             await cargarDatos();
             setSeccion('mis-reservas');
         } catch (error) {
             alert(error.response?.data?.message || 'No se pudo registrar la reserva.');
             console.error(error.response?.data || error);
+        } finally {
+            setRegistrandoReserva(false);
         }
     };
 
@@ -507,10 +769,18 @@ export default function PanelCliente() {
 
     return (
         <div style={{ width: '100%', minHeight: '100vh', background: '#f5f4f0' }}>
-            <header style={{ background: '#111827', color: '#fff', padding: '0.7rem 1rem', display: 'grid', gridTemplateColumns: '170px 1fr 280px', gap: '1rem', alignItems: 'center', boxShadow: '0 2px 10px rgba(0,0,0,.15)' }}>
+            <header style={{
+                background: '#111827',
+                color: '#fff',
+                padding: '0.7rem 1rem',
+                display: 'grid',
+                gridTemplateColumns: '170px 1fr 280px',
+                gap: '1rem',
+                alignItems: 'center',
+                boxShadow: '0 2px 10px rgba(0,0,0,.15)'
+            }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <strong style={{ fontSize: 22 }}><span style={{ color: '#fff' }}>rent</span><span style={{ color: '#ffb84d' }}>Car</span></strong>
-                    
                 </div>
 
                 <div style={{ display: 'flex', width: '100%', maxWidth: 720 }}>
@@ -521,17 +791,24 @@ export default function PanelCliente() {
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 16 }}>
                     <div style={{ fontSize: 12 }}>
-                        Hola, {perfil?.nombre || auth?.nombre}<br />
-                        
+                        Hola, {perfil?.nombre || auth?.nombre || 'Cliente'}
                     </div>
                     <button onClick={logout} style={{ background: '#111827', color: '#fff', border: '1px solid #fff', padding: '0.6rem 1rem', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }}>Cerrar sesión</button>
                 </div>
             </header>
 
             <nav style={{ background: '#1f2937', color: '#fff', display: 'flex', alignItems: 'center', gap: 18, padding: '0.6rem 1rem', overflowX: 'auto' }}>
-                <b style={{ whiteSpace: 'nowrap' }}></b>
                 {MENU_CLIENTE.map(m => (
-                    <button key={m.id} onClick={() => setSeccion(m.id)} style={{ background: seccion === m.id ? '#ffb84d' : 'transparent', color: seccion === m.id ? '#111827' : '#fff', border: seccion === m.id ? '1px solid #ffb84d' : '1px solid transparent', borderRadius: 6, padding: '0.35rem 0.7rem', cursor: 'pointer', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                    <button key={m.id} onClick={() => setSeccion(m.id)} style={{
+                        background: seccion === m.id ? '#ffb84d' : 'transparent',
+                        color: seccion === m.id ? '#111827' : '#fff',
+                        border: seccion === m.id ? '1px solid #ffb84d' : '1px solid transparent',
+                        borderRadius: 6,
+                        padding: '0.35rem 0.7rem',
+                        cursor: 'pointer',
+                        fontWeight: 700,
+                        whiteSpace: 'nowrap'
+                    }}>
                         {m.label}
                     </button>
                 ))}
@@ -540,6 +817,21 @@ export default function PanelCliente() {
             <main style={{ width: '100%', padding: '1rem', overflowX: 'hidden', boxSizing: 'border-box' }}>
                 {render()}
             </main>
+
+            {modalReserva && (
+                <ModalReserva
+                    vehiculo={vehiculoSeleccionado}
+                    fechaFin={fechaFin}
+                    setFechaFin={setFechaFin}
+                    enviando={registrandoReserva}
+                    onCerrar={() => {
+                        setModalReserva(false);
+                        setVehiculoSeleccionado(null);
+                        setFechaFin('');
+                    }}
+                    onConfirmar={confirmarReserva}
+                />
+            )}
         </div>
     );
 }

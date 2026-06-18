@@ -1,6 +1,15 @@
 import { useContext } from 'react';
 import VehiculoContext from '../context/VehiculoContext';
 
+const API_BACKEND = 'http://127.0.0.1:8000';
+
+function imagenUrl(path) {
+    if (!path) return '/vehiculo-default.png';
+    const img = String(path).trim();
+    if (img.startsWith('http://') || img.startsWith('https://')) return img;
+    return `${API_BACKEND}/storage/${img.replace(/^\/?storage\//, '')}`;
+}
+
 const COLORES_ESTADO = {
     disponible:    { bg:'#dcfce7', text:'#166534' },
     reservado:     { bg:'#fef9c3', text:'#854d0e' },
@@ -50,8 +59,9 @@ function ListaVehiculos() {
                         }}>
                             {v.imagen ? (
                                 <img
-                                    src={`http://127.0.0.1:8000/storage/${v.imagen}`}
+                                    src={imagenUrl(v.imagen)}
                                     alt={`${v.marca} ${v.modelo}`}
+                                    onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/vehiculo-default.png'; }}
                                     style={{
                                         width:'100%',
                                         height:'100%',

@@ -63,5 +63,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/mantenimientos/{mantenimiento}',      [MantenimientoController::class, 'update']);
 
     // Categorías de vehículos
-    Route::get('/categorias-vehiculos',     [CategoriaVehiculoController::class, 'index']);
+    Route::get('/categorias-vehiculos', [CategoriaVehiculoController::class, 'index']);
+    Route::post('/categorias-vehiculos', [CategoriaVehiculoController::class, 'store']);
 });

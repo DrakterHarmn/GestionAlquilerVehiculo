@@ -78,7 +78,11 @@ class CajaController extends Controller
     private function sincronizarPagosAprobados(Caja $caja): void
     {
         $pagos = Pago::where('estado', 'aprobado')
-            ->whereDoesntHave('movimientoCaja')
+            ->whereNotIn('id', function ($query) {
+                $query->select('id_pago')
+                    ->from('movimientos_caja')
+                    ->whereNotNull('id_pago');
+            })
             ->get();
 
         foreach ($pagos as $pago) {

@@ -163,9 +163,7 @@ class PagoController extends Controller
             return;
         }
 
-        $cajaAbierta = Caja::where('estado', 'abierta')
-            ->where('id_usuario', $request->user()->id)
-            ->first();
+        $cajaAbierta = Caja::where('estado', 'abierta')->latest('id')->first();
 
         if (!$cajaAbierta) {
             return;
@@ -181,13 +179,14 @@ class PagoController extends Controller
             'descripcion' => 'Método: ' . $pago->metodo_pago,
         ]);
 
-        $cajaAbierta->increment('total_ingresos', $pago->monto);
-        $cajaAbierta->refresh();
+        $this->recalcularCaja($cajaAbierta);
 
         $cajaAbierta->update([
             'monto_final' => $cajaAbierta->monto_inicial + $cajaAbierta->total_ingresos - $cajaAbierta->total_egresos,
         ]);
     }
+
+
     private function recalcularCaja(Caja $caja): void
     {
         $ingresos = (float) $caja->movimientos()->where('tipo', 'ingreso')->sum('monto');
