@@ -22,19 +22,33 @@ class ClienteController extends Controller
             'telefono'                   => 'nullable|string|max:20',
             'correo'                     => 'nullable|email|max:100',
             'direccion'                  => 'nullable|string|max:150',
-            'licencia_conducir'          => 'nullable|string|max:30',
-            'fecha_vencimiento_licencia' => 'nullable|date',
+            'tiene_licencia'             => 'nullable|in:si,no',
+            'licencia_conducir'          => 'required_if:tiene_licencia,si|nullable|string|max:30',
+            'fecha_vencimiento_licencia' => 'required_if:tiene_licencia,si|nullable|date',
         ]);
 
-        $persona = Persona::create($request->only(['dni','nombres','apellidos','telefono','correo','direccion']));
+        $persona = Persona::create($request->only([
+            'dni',
+            'nombres',
+            'apellidos',
+            'telefono',
+            'correo',
+            'direccion',
+        ]));
+
+        $tieneLicencia = $request->tiene_licencia === 'si';
 
         $cliente = Cliente::create([
             'id_persona'                 => $persona->id,
-            'licencia_conducir'          => $request->licencia_conducir,
-            'fecha_vencimiento_licencia' => $request->fecha_vencimiento_licencia,
+            'licencia_conducir'          => $tieneLicencia ? $request->licencia_conducir : null,
+            'fecha_vencimiento_licencia' => $tieneLicencia ? $request->fecha_vencimiento_licencia : null,
+            'estado'                     => true,
         ]);
 
-        return response()->json(['mensaje' => 'Cliente registrado.', 'cliente' => $cliente->load('persona')], 201);
+        return response()->json([
+            'mensaje' => 'Cliente registrado.',
+            'cliente' => $cliente->load('persona'),
+        ], 201);
     }
 
     public function show(Cliente $cliente)
@@ -50,20 +64,37 @@ class ClienteController extends Controller
             'telefono'                   => 'nullable|string|max:20',
             'correo'                     => 'nullable|email|max:100',
             'direccion'                  => 'nullable|string|max:150',
-            'licencia_conducir'          => 'nullable|string|max:30',
-            'fecha_vencimiento_licencia' => 'nullable|date',
+            'tiene_licencia'             => 'nullable|in:si,no',
+            'licencia_conducir'          => 'required_if:tiene_licencia,si|nullable|string|max:30',
+            'fecha_vencimiento_licencia' => 'required_if:tiene_licencia,si|nullable|date',
         ]);
 
-        $cliente->persona->update($request->only(['nombres','apellidos','telefono','correo','direccion']));
-        $cliente->update($request->only(['licencia_conducir','fecha_vencimiento_licencia']));
+        $cliente->persona->update($request->only([
+            'nombres',
+            'apellidos',
+            'telefono',
+            'correo',
+            'direccion',
+        ]));
 
-        return response()->json(['mensaje' => 'Cliente actualizado.', 'cliente' => $cliente->load('persona')]);
+        $tieneLicencia = $request->tiene_licencia === 'si';
+
+        $cliente->update([
+            'licencia_conducir'          => $tieneLicencia ? $request->licencia_conducir : null,
+            'fecha_vencimiento_licencia' => $tieneLicencia ? $request->fecha_vencimiento_licencia : null,
+        ]);
+
+        return response()->json([
+            'mensaje' => 'Cliente actualizado.',
+            'cliente' => $cliente->load('persona'),
+        ]);
     }
 
     public function destroy(Cliente $cliente)
     {
         $cliente->persona->update(['estado' => false]);
         $cliente->update(['estado' => false]);
+
         return response()->json(['mensaje' => 'Cliente desactivado.']);
     }
 }

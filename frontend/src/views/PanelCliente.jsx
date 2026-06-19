@@ -69,6 +69,128 @@ function money(value) {
     return `S/ ${Number(value || 0).toFixed(2)}`;
 }
 
+function safeText(value) {
+    return String(value ?? '—')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function imprimirComprobantePago(pago) {
+    const alquiler = pago?.alquiler || {};
+    const cliente = alquiler?.cliente?.persona || {};
+    const vehiculo = alquiler?.vehiculo || {};
+
+    const clienteNombre = `${cliente.nombres || ''} ${cliente.apellidos || ''}`.trim() || 'Cliente';
+    const montoAlquiler = Number(alquiler.monto_total || 0);
+    const penalidad = Number(alquiler.penalidad || 0);
+    const totalPagado = Number(pago?.monto || (montoAlquiler + penalidad));
+    const numeroComprobante = `REC-${String(pago?.id || '000').padStart(6, '0')}`;
+
+    const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8" />
+            <title>Comprobante ${safeText(numeroComprobante)}</title>
+            <style>
+                body { font-family: Arial, sans-serif; background:#f3f4f6; margin:0; padding:30px; color:#111827; }
+                .recibo { max-width:760px; margin:auto; background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 10px 35px rgba(0,0,0,.12); }
+                .header { background:#111827; color:#fff; padding:26px 32px; display:flex; justify-content:space-between; gap:20px; }
+                .header h1 { margin:0; font-size:25px; }
+                .header p { margin:6px 0 0; color:#d1d5db; }
+                .badge { background:#dcfce7; color:#166534; padding:8px 14px; border-radius:999px; font-weight:700; font-size:13px; align-self:flex-start; }
+                .body { padding:30px 32px; }
+                .grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:20px; }
+                .box { border:1px solid #e5e7eb; border-radius:12px; padding:16px; background:#f9fafb; }
+                .box h3 { margin:0 0 10px; font-size:15px; color:#374151; }
+                .row { display:flex; justify-content:space-between; gap:16px; padding:8px 0; border-bottom:1px dashed #e5e7eb; }
+                .row:last-child { border-bottom:0; }
+                .label { color:#6b7280; }
+                .value { font-weight:700; text-align:right; }
+                .total { margin-top:20px; border:2px solid #ffb84d; border-radius:14px; padding:18px; background:#fff7ed; }
+                .total .row { font-size:18px; border-bottom:0; }
+                .footer { padding:18px 32px 28px; color:#6b7280; font-size:13px; text-align:center; }
+                .acciones { max-width:760px; margin:18px auto 0; display:flex; justify-content:center; gap:10px; }
+                button { padding:10px 16px; border:0; border-radius:10px; cursor:pointer; font-weight:700; }
+                .print { background:#ffb84d; color:#111827; }
+                .close { background:#e5e7eb; color:#111827; }
+                @media print {
+                    body { background:#fff; padding:0; }
+                    .recibo { box-shadow:none; border-radius:0; }
+                    .acciones { display:none; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="recibo">
+                <div class="header">
+                    <div>
+                        <h1>Comprobante de Pago</h1>
+                        <p>Sistema de Gestión de Alquiler de Vehículos</p>
+                        <p><b>N.º:</b> ${safeText(numeroComprobante)}</p>
+                    </div>
+                    <div class="badge">${safeText(pago?.estado || 'aprobado').toUpperCase()}</div>
+                </div>
+
+                <div class="body">
+                    <div class="grid">
+                        <div class="box">
+                            <h3>Datos del cliente</h3>
+                            <div class="row"><span class="label">Cliente</span><span class="value">${safeText(clienteNombre)}</span></div>
+                            <div class="row"><span class="label">DNI</span><span class="value">${safeText(cliente.dni)}</span></div>
+                            <div class="row"><span class="label">Correo</span><span class="value">${safeText(cliente.correo)}</span></div>
+                        </div>
+                        <div class="box">
+                            <h3>Datos del pago</h3>
+                            <div class="row"><span class="label">Fecha</span><span class="value">${safeText(formatDate(pago?.fecha_pago))}</span></div>
+                            <div class="row"><span class="label">Método</span><span class="value">${safeText(pago?.metodo_pago)}</span></div>
+                            <div class="row"><span class="label">Nro. operación</span><span class="value">${safeText(pago?.nro_operacion)}</span></div>
+                        </div>
+                    </div>
+
+                    <div class="box">
+                        <h3>Detalle del alquiler</h3>
+                        <div class="row"><span class="label">Vehículo</span><span class="value">${safeText(`${vehiculo.marca || ''} ${vehiculo.modelo || ''}`.trim())}</span></div>
+                        <div class="row"><span class="label">Placa</span><span class="value">${safeText(vehiculo.placa)}</span></div>
+                        <div class="row"><span class="label">Fecha salida</span><span class="value">${safeText(formatDate(alquiler.fecha_salida))}</span></div>
+                        <div class="row"><span class="label">Devolución programada</span><span class="value">${safeText(formatDate(alquiler.fecha_devolucion_programada))}</span></div>
+                    </div>
+
+                    <div class="total">
+                        <div class="row"><span class="label">Monto alquiler</span><span class="value">${safeText(money(montoAlquiler))}</span></div>
+                        <div class="row"><span class="label">Penalidad</span><span class="value">${safeText(money(penalidad))}</span></div>
+                        <div class="row"><span class="label"><b>Total pagado</b></span><span class="value">${safeText(money(totalPagado))}</span></div>
+                    </div>
+                </div>
+
+                <div class="footer">
+                    Este documento es un comprobante interno del sistema. No representa una factura electrónica SUNAT.
+                </div>
+            </div>
+            <div class="acciones">
+                <button class="print" onclick="window.print()">Imprimir / Guardar PDF</button>
+                <button class="close" onclick="window.close()">Cerrar</button>
+            </div>
+        </body>
+        </html>
+    `;
+
+    const ventana = window.open('', '_blank', 'width=900,height=900');
+    if (!ventana) {
+        alert('El navegador bloqueó la ventana emergente del comprobante. Permite pop-ups para este sitio.');
+        return;
+    }
+
+    ventana.document.open();
+    ventana.document.write(html);
+    ventana.document.close();
+    ventana.focus();
+}
+
+
 function DashboardCliente({ vehiculos, reservas, alquileres, pagos, irBuscar }) {
     const cards = [
         ['Vehículos disponibles', vehiculos.filter(v => v.estado === 'disponible').length],
@@ -379,8 +501,13 @@ function MisReservas({ reservas, onCancelar }) {
                         <p>Fecha inicio: {formatDate(r.fecha_inicio)} | Fecha fin: {formatDate(r.fecha_fin)}</p>
                         <p>Total estimado: <b>{money(r.total_estimado)}</b></p>
                         <p>Estado: <b>{r.estado}</b></p>
-                        {['pendiente', 'confirmada'].includes(r.estado) && (
+                        {r.estado === 'pendiente' && (
                             <button onClick={() => onCancelar(r.id)} style={btnSoft}>Cancelar reserva</button>
+                        )}
+                        {r.estado === 'confirmada' && (
+                            <p style={{ color: '#16a34a', fontWeight: 700 }}>
+                                Reserva confirmada. El administrador gestionará el alquiler.
+                            </p>
                         )}
                     </div>
                 ))}
@@ -408,8 +535,16 @@ function MisAlquileres({ alquileres }) {
     );
 }
 
-function FormPagoCliente({ alquileres, onPagoCreado }) {
-    const alquileresPagables = alquileres.filter(a => ['activo', 'finalizado'].includes(a.estado));
+function FormPagoCliente({ alquileres, pagos, onPagoCreado }) {
+    const idsAlquileresPagados = pagos
+        .filter(p => ['pendiente', 'aprobado', 'pagado'].includes(p.estado))
+        .map(p => Number(p.id_alquiler));
+    
+    const alquileresPagables = alquileres.filter(a =>
+        ['activo', 'finalizado'].includes(a.estado) &&
+        !idsAlquileresPagados.includes(Number(a.id))
+    );    
+
     const [form, setForm] = useState({
         id_alquiler: '',
         metodo_pago: 'yape',
@@ -418,7 +553,9 @@ function FormPagoCliente({ alquileres, onPagoCreado }) {
     const [enviando, setEnviando] = useState(false);
 
     const alquilerSeleccionado = alquileresPagables.find(a => String(a.id) === String(form.id_alquiler));
-    const montoAutomatico = Number(alquilerSeleccionado?.monto_total || 0);
+    const montoAlquiler = Number(alquilerSeleccionado?.monto_total || 0);
+    const penalidad = Number(alquilerSeleccionado?.penalidad || 0);
+    const montoAutomatico = montoAlquiler + penalidad;
 
     const enviarPago = async (e) => {
         e.preventDefault();
@@ -523,7 +660,11 @@ function FormPagoCliente({ alquileres, onPagoCreado }) {
                     <h4 style={{ margin: '0 0 0.8rem', color: '#374151' }}>Resumen</h4>
                     <p style={{ display: 'flex', justifyContent: 'space-between', margin: '0.5rem 0' }}>
                         <span>Monto del alquiler</span>
-                        <b>{money(montoAutomatico)}</b>
+                        <b>{money(montoAlquiler)}</b>
+                    </p>
+                    <p style={{ display: 'flex', justifyContent: 'space-between', margin: '0.5rem 0' }}>
+                        <span>Penalidad</span>
+                        <b>{money(penalidad)}</b>   
                     </p>
                     <hr style={{ border: 0, borderTop: '1px solid #e5e7eb' }} />
                     <p style={{ display: 'flex', justifyContent: 'space-between', fontSize: 18 }}>
@@ -555,7 +696,7 @@ function MisPagos({ pagos, alquileres, onPagoCreado }) {
         <div>
             <h2 style={{ marginTop: 0 }}>Mis Pagos</h2>
 
-            <FormPagoCliente alquileres={alquileres} onPagoCreado={onPagoCreado} />
+            <FormPagoCliente alquileres={alquileres} pagos={pagos} onPagoCreado={onPagoCreado} />
 
             <div style={{ display: 'grid', gap: '1rem' }}>
                 {pagos.length === 0 && <div style={card}>No tienes pagos registrados.</div>}
@@ -566,6 +707,15 @@ function MisPagos({ pagos, alquileres, onPagoCreado }) {
                         <p>Fecha: {formatDate(p.fecha_pago)} | Método: <b>{p.metodo_pago}</b></p>
                         <p>Monto: <b>{money(p.monto)}</b> | Estado: <b style={{ color: estadoColor[p.estado] || '#111827' }}>{p.estado}</b></p>
                         {p.nro_operacion && <p>Nro. operación: <b>{p.nro_operacion}</b></p>}
+                        {['aprobado', 'pagado'].includes(p.estado) && (
+                            <button
+                                type="button"
+                                onClick={() => imprimirComprobantePago(p)}
+                                style={{ ...btnSoft, marginTop: '0.5rem' }}
+                            >
+                                Ver comprobante
+                            </button>
+                        )}
                     </div>
                 ))}
             </div>

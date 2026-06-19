@@ -87,8 +87,9 @@ class AuthController extends Controller
             'direccion' => 'nullable|string|max:150',
             'usuario' => 'required|string|max:50|unique:usuarios,usuario',
             'password' => 'required|string|min:6',
-            'licencia_conducir' => 'nullable|string|max:30',
-            'fecha_vencimiento_licencia' => 'nullable|date',
+            'tiene_licencia' => 'nullable|in:si,no',
+            'licencia_conducir' => 'required_if:tiene_licencia,si|nullable|string|max:30',
+            'fecha_vencimiento_licencia' => 'required_if:tiene_licencia,si|nullable|date',
         ]);
 
         $rolCliente = Rol::firstOrCreate(
@@ -114,10 +115,12 @@ class AuthController extends Controller
             'estado' => true,
         ]);
 
+        $tieneLicencia = $request->tiene_licencia === 'si';
+
         $cliente = Cliente::create([
             'id_persona' => $persona->id,
-            'licencia_conducir' => $request->licencia_conducir,
-            'fecha_vencimiento_licencia' => $request->fecha_vencimiento_licencia,
+            'licencia_conducir' => $tieneLicencia ? $request->licencia_conducir : null,
+            'fecha_vencimiento_licencia' => $tieneLicencia ? $request->fecha_vencimiento_licencia : null,
             'estado' => true,
         ]);
 

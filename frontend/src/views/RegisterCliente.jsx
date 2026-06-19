@@ -10,6 +10,7 @@ const inicial = {
     direccion: '',
     usuario: '',
     password: '',
+    tiene_licencia: 'no',
     licencia_conducir: '',
     fecha_vencimiento_licencia: '',
 };
@@ -22,9 +23,21 @@ export default function RegisterCliente({ volverLogin }) {
     const [loading, setLoading] = useState(false);
 
     const handleChange = (e) => {
+        const { name, value } = e.target;
+
+        if (name === 'tiene_licencia' && value === 'no') {
+            setForm({
+                ...form,
+                tiene_licencia: 'no',
+                licencia_conducir: '',
+                fecha_vencimiento_licencia: '',
+            });
+            return;
+        }
+
         setForm({
             ...form,
-            [e.target.name]: e.target.value,
+            [name]: value,
         });
     };
 
@@ -35,7 +48,13 @@ export default function RegisterCliente({ volverLogin }) {
         setLoading(true);
 
         try {
-            const data = await registerCliente(form);
+            const payload = {
+                ...form,
+                licencia_conducir: form.tiene_licencia === 'si' ? form.licencia_conducir : null,
+                fecha_vencimiento_licencia: form.tiene_licencia === 'si' ? form.fecha_vencimiento_licencia : null,
+            };
+
+            const data = await registerCliente(payload);
             setMensaje(data.message || 'Cliente registrado correctamente.');
             setForm(inicial);
         } catch (err) {
@@ -100,8 +119,36 @@ export default function RegisterCliente({ volverLogin }) {
                         <input style={input} name="direccion" value={form.direccion} onChange={handleChange} placeholder="Dirección" />
                         <input style={input} type="password" name="password" value={form.password} onChange={handleChange} placeholder="Contraseña" required />
 
-                        <input style={input} name="licencia_conducir" value={form.licencia_conducir} onChange={handleChange} placeholder="Licencia de conducir" />
-                        <input style={input} type="date" name="fecha_vencimiento_licencia" value={form.fecha_vencimiento_licencia} onChange={handleChange} />
+                        <select
+                            style={input}
+                            name="tiene_licencia"
+                            value={form.tiene_licencia}
+                            onChange={handleChange}
+                        >
+                            <option value="no">No tengo licencia</option>
+                            <option value="si">Sí tengo licencia</option>
+                        </select>
+
+                        {form.tiene_licencia === 'si' && (
+                            <>
+                                <input
+                                    style={input}
+                                    name="licencia_conducir"
+                                    value={form.licencia_conducir}
+                                    onChange={handleChange}
+                                    placeholder="Licencia de conducir"
+                                    required
+                                />
+                                <input
+                                    style={input}
+                                    type="date"
+                                    name="fecha_vencimiento_licencia"
+                                    value={form.fecha_vencimiento_licencia}
+                                    onChange={handleChange}
+                                    required
+                                />
+                            </>
+                        )}
                     </div>
 
                     <button

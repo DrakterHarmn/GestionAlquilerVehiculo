@@ -75,16 +75,46 @@ export function ClientesView() {
                             <input style={inp} type="text" name="direccion" value={form.direccion}
                                 onChange={handleInputChange} placeholder="Av. El Sol 123" />
                         </div>
-                        <div>
-                            <label style={lbl}>Licencia</label>
-                            <input style={inp} type="text" name="licencia_conducir" value={form.licencia_conducir}
-                                onChange={handleInputChange} placeholder="Q12345678" />
+                        <div style={{ gridColumn: '1/-1' }}>
+                            <label style={lbl}>¿Tiene licencia?</label>
+                            <select
+                                style={inp}
+                                name="tiene_licencia"
+                                value={form.tiene_licencia}
+                                onChange={handleInputChange}
+                            >
+                                <option value="no">No, registrar sin licencia</option>
+                                <option value="si">Sí, registrar licencia</option>
+                            </select>
                         </div>
-                        <div>
-                            <label style={lbl}>Vencimiento</label>
-                            <input style={inp} type="date" name="fecha_vencimiento_licencia"
-                                value={form.fecha_vencimiento_licencia} onChange={handleInputChange} />
-                        </div>
+
+                        {form.tiene_licencia === 'si' && (
+                            <>
+                                <div>
+                                    <label style={lbl}>Licencia *</label>
+                                    <input
+                                        style={inp}
+                                        type="text"
+                                        name="licencia_conducir"
+                                        value={form.licencia_conducir}
+                                        onChange={handleInputChange}
+                                        placeholder="Q12345678"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label style={lbl}>Vencimiento *</label>
+                                    <input
+                                        style={inp}
+                                        type="date"
+                                        name="fecha_vencimiento_licencia"
+                                        value={form.fecha_vencimiento_licencia}
+                                        onChange={handleInputChange}
+                                        required
+                                    />
+                                </div>
+                            </>
+                        )}
                     </div>
 
                     <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
@@ -111,7 +141,7 @@ export function ClientesView() {
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                         <thead>
                             <tr style={{ background: '#f8fafc' }}>
-                                {['DNI', 'Nombre completo', 'Teléfono', 'Correo', 'Licencia', 'Acciones'].map(h => (
+                                {['DNI', 'Nombre completo', 'Teléfono', 'Correo', 'Licencia', 'Vencimiento', 'Acciones'].map(h => (
                                     <th key={h} style={{
                                         padding: '0.6rem 0.75rem', textAlign: 'left',
                                         fontSize: 11, fontWeight: 600, color: '#6b7280',
@@ -123,7 +153,7 @@ export function ClientesView() {
                         <tbody>
                             {clientes.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>
+                                    <td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>
                                         No hay clientes registrados.
                                     </td>
                                 </tr>
@@ -134,7 +164,8 @@ export function ClientesView() {
                                         <td style={{ padding: '0.6rem 0.75rem' }}>{c.persona?.nombres} {c.persona?.apellidos}</td>
                                         <td style={{ padding: '0.6rem 0.75rem', color: '#6b7280' }}>{c.persona?.telefono || '—'}</td>
                                         <td style={{ padding: '0.6rem 0.75rem', color: '#6b7280' }}>{c.persona?.correo || '—'}</td>
-                                        <td style={{ padding: '0.6rem 0.75rem', fontFamily: 'monospace' }}>{c.licencia_conducir || '—'}</td>
+                                        <td style={{ padding: '0.6rem 0.75rem', fontFamily: 'monospace' }}>{c.licencia_conducir || 'Sin licencia'}</td>
+                                        <td style={{ padding: '0.6rem 0.75rem', color: '#6b7280' }}>{c.fecha_vencimiento_licencia ? String(c.fecha_vencimiento_licencia).slice(0, 10) : '—'}</td>
                                         <td style={{ padding: '0.6rem 0.75rem', display: 'flex', gap: 4 }}>
                                             <button onClick={() => editarCliente(c)}
                                                 style={{ background: '#eff6ff', color: '#3b82f6', border: '1px solid #bfdbfe', borderRadius: 6, padding: '3px 8px', fontSize: 12, cursor: 'pointer' }}>

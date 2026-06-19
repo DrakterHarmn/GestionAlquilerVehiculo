@@ -46,6 +46,16 @@ class PagoController extends Controller
 
         $alquiler = Alquiler::with('cliente.persona', 'vehiculo')->findOrFail($request->id_alquiler);
 
+        $pagoExistente = Pago::where('id_alquiler', $alquiler->id)
+            ->whereIn('estado', ['pendiente', 'aprobado', 'pagado'])
+            ->exists();
+
+        if ($pagoExistente) {
+            return response()->json([
+                'message' => 'Este alquiler ya tiene un pago registrado o pendiente de validación.',
+            ], 422);
+        }
+
         if (!$this->esAdmin($request)) {
             $cliente = $this->clienteActual($request);
 

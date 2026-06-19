@@ -76,6 +76,128 @@ function money(value) {
     return `S/ ${Number(value || 0).toFixed(2)}`;
 }
 
+function safeText(value) {
+    return String(value ?? '—')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function imprimirComprobantePago(pago) {
+    const alquiler = pago?.alquiler || {};
+    const cliente = alquiler?.cliente?.persona || {};
+    const vehiculo = alquiler?.vehiculo || {};
+
+    const clienteNombre = `${cliente.nombres || ''} ${cliente.apellidos || ''}`.trim() || 'Cliente';
+    const montoAlquiler = Number(alquiler.monto_total || 0);
+    const penalidad = Number(alquiler.penalidad || 0);
+    const totalPagado = Number(pago?.monto || (montoAlquiler + penalidad));
+    const numeroComprobante = `REC-${String(pago?.id || '000').padStart(6, '0')}`;
+
+    const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8" />
+            <title>Comprobante ${safeText(numeroComprobante)}</title>
+            <style>
+                body { font-family: Arial, sans-serif; background:#f3f4f6; margin:0; padding:30px; color:#111827; }
+                .recibo { max-width:760px; margin:auto; background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 10px 35px rgba(0,0,0,.12); }
+                .header { background:#111827; color:#fff; padding:26px 32px; display:flex; justify-content:space-between; gap:20px; }
+                .header h1 { margin:0; font-size:25px; }
+                .header p { margin:6px 0 0; color:#d1d5db; }
+                .badge { background:#dcfce7; color:#166534; padding:8px 14px; border-radius:999px; font-weight:700; font-size:13px; align-self:flex-start; }
+                .body { padding:30px 32px; }
+                .grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:20px; }
+                .box { border:1px solid #e5e7eb; border-radius:12px; padding:16px; background:#f9fafb; }
+                .box h3 { margin:0 0 10px; font-size:15px; color:#374151; }
+                .row { display:flex; justify-content:space-between; gap:16px; padding:8px 0; border-bottom:1px dashed #e5e7eb; }
+                .row:last-child { border-bottom:0; }
+                .label { color:#6b7280; }
+                .value { font-weight:700; text-align:right; }
+                .total { margin-top:20px; border:2px solid #ffb84d; border-radius:14px; padding:18px; background:#fff7ed; }
+                .total .row { font-size:18px; border-bottom:0; }
+                .footer { padding:18px 32px 28px; color:#6b7280; font-size:13px; text-align:center; }
+                .acciones { max-width:760px; margin:18px auto 0; display:flex; justify-content:center; gap:10px; }
+                button { padding:10px 16px; border:0; border-radius:10px; cursor:pointer; font-weight:700; }
+                .print { background:#ffb84d; color:#111827; }
+                .close { background:#e5e7eb; color:#111827; }
+                @media print {
+                    body { background:#fff; padding:0; }
+                    .recibo { box-shadow:none; border-radius:0; }
+                    .acciones { display:none; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="recibo">
+                <div class="header">
+                    <div>
+                        <h1>Comprobante de Pago</h1>
+                        <p>Sistema de Gestión de Alquiler de Vehículos</p>
+                        <p><b>N.º:</b> ${safeText(numeroComprobante)}</p>
+                    </div>
+                    <div class="badge">${safeText(pago?.estado || 'aprobado').toUpperCase()}</div>
+                </div>
+
+                <div class="body">
+                    <div class="grid">
+                        <div class="box">
+                            <h3>Datos del cliente</h3>
+                            <div class="row"><span class="label">Cliente</span><span class="value">${safeText(clienteNombre)}</span></div>
+                            <div class="row"><span class="label">DNI</span><span class="value">${safeText(cliente.dni)}</span></div>
+                            <div class="row"><span class="label">Correo</span><span class="value">${safeText(cliente.correo)}</span></div>
+                        </div>
+                        <div class="box">
+                            <h3>Datos del pago</h3>
+                            <div class="row"><span class="label">Fecha</span><span class="value">${safeText(formatDate(pago?.fecha_pago))}</span></div>
+                            <div class="row"><span class="label">Método</span><span class="value">${safeText(pago?.metodo_pago)}</span></div>
+                            <div class="row"><span class="label">Nro. operación</span><span class="value">${safeText(pago?.nro_operacion)}</span></div>
+                        </div>
+                    </div>
+
+                    <div class="box">
+                        <h3>Detalle del alquiler</h3>
+                        <div class="row"><span class="label">Vehículo</span><span class="value">${safeText(`${vehiculo.marca || ''} ${vehiculo.modelo || ''}`.trim())}</span></div>
+                        <div class="row"><span class="label">Placa</span><span class="value">${safeText(vehiculo.placa)}</span></div>
+                        <div class="row"><span class="label">Fecha salida</span><span class="value">${safeText(formatDate(alquiler.fecha_salida))}</span></div>
+                        <div class="row"><span class="label">Devolución programada</span><span class="value">${safeText(formatDate(alquiler.fecha_devolucion_programada))}</span></div>
+                    </div>
+
+                    <div class="total">
+                        <div class="row"><span class="label">Monto alquiler</span><span class="value">${safeText(money(montoAlquiler))}</span></div>
+                        <div class="row"><span class="label">Penalidad</span><span class="value">${safeText(money(penalidad))}</span></div>
+                        <div class="row"><span class="label"><b>Total pagado</b></span><span class="value">${safeText(money(totalPagado))}</span></div>
+                    </div>
+                </div>
+
+                <div class="footer">
+                    Este documento es un comprobante interno del sistema. No representa una factura electrónica SUNAT.
+                </div>
+            </div>
+            <div class="acciones">
+                <button class="print" onclick="window.print()">Imprimir / Guardar PDF</button>
+                <button class="close" onclick="window.close()">Cerrar</button>
+            </div>
+        </body>
+        </html>
+    `;
+
+    const ventana = window.open('', '_blank', 'width=900,height=900');
+    if (!ventana) {
+        alert('El navegador bloqueó la ventana emergente del comprobante. Permite pop-ups para este sitio.');
+        return;
+    }
+
+    ventana.document.open();
+    ventana.document.write(html);
+    ventana.document.close();
+    ventana.focus();
+}
+
+
 function Dashboard({ datos, onGo }) {
     const vehiculos = datos.vehiculos || [];
     const clientes = datos.clientes || [];
@@ -127,7 +249,211 @@ function Dashboard({ datos, onGo }) {
     );
 }
 
+
+function ModalCrearAlquiler({ reserva, form, setForm, onCerrar, onConfirmar, enviando }) {
+    if (!reserva) return null;
+
+    const fechaInicio = formatDate(reserva.fecha_inicio);
+    const fechaFin = formatDate(reserva.fecha_fin);
+
+    return (
+        <div style={{
+            position:'fixed',
+            inset:0,
+            background:'rgba(0,0,0,.55)',
+            display:'flex',
+            justifyContent:'center',
+            alignItems:'center',
+            zIndex:9999,
+            padding:'1rem'
+        }}>
+            <div style={{
+                width:'100%',
+                maxWidth:460,
+                background:'#fff',
+                borderRadius:18,
+                boxShadow:'0 20px 60px rgba(0,0,0,.25)',
+                overflow:'hidden'
+            }}>
+                <div style={{ background:'#1a1a2e', color:'#fff', padding:'1rem 1.3rem' }}>
+                    <h2 style={{ margin:0, fontSize:20 }}>Convertir reserva a alquiler</h2>
+                    <p style={{ margin:'0.3rem 0 0', color:'#d1d5db', fontSize:13 }}>
+                        Confirme las fechas del alquiler antes de iniciar la entrega.
+                    </p>
+                </div>
+
+                <div style={{ padding:'1.3rem', display:'grid', gap:'0.9rem' }}>
+                    <div style={{ background:'#f9fafb', border:'1px solid #e5e7eb', borderRadius:12, padding:'0.9rem' }}>
+                        <b>{reserva.vehiculo?.marca} {reserva.vehiculo?.modelo}</b>
+                        <p style={{ margin:'0.35rem 0 0', color:'#6b7280' }}>
+                            Cliente: {reserva.cliente?.persona?.nombres} {reserva.cliente?.persona?.apellidos}
+                        </p>
+                        <p style={{ margin:'0.25rem 0 0', color:'#6b7280' }}>
+                            Reserva: {fechaInicio} a {fechaFin} · Total: {money(reserva.total_estimado)}
+                        </p>
+                    </div>
+
+                    <div>
+                        <label style={{ fontWeight:800, color:'#374151', fontSize:13 }}>Fecha de salida</label>
+                        <input
+                            type="date"
+                            value={form.fecha_salida}
+                            min={fechaInicio}
+                            onChange={e => setForm({ ...form, fecha_salida:e.target.value })}
+                            style={{ ...input, width:'100%', marginTop:6 }}
+                        />
+                    </div>
+
+                    <div>
+                        <label style={{ fontWeight:800, color:'#374151', fontSize:13 }}>Fecha de devolución programada</label>
+                        <input
+                            type="date"
+                            value={form.fecha_devolucion_programada}
+                            min={form.fecha_salida || fechaInicio}
+                            onChange={e => setForm({ ...form, fecha_devolucion_programada:e.target.value })}
+                            style={{ ...input, width:'100%', marginTop:6 }}
+                        />
+                    </div>
+
+                    <div style={{ background:'#eff6ff', border:'1px solid #bfdbfe', color:'#1e40af', borderRadius:12, padding:'0.8rem', fontSize:13 }}>
+                        Al confirmar, el vehículo pasará a estado <b>alquilado</b> y el alquiler quedará activo.
+                    </div>
+
+                    <div style={{ display:'flex', justifyContent:'flex-end', gap:10 }}>
+                        <button disabled={enviando} onClick={onCerrar} style={btnDanger}>Cancelar</button>
+                        <button disabled={enviando} onClick={onConfirmar} style={btnPrimary}>
+                            {enviando ? 'Creando...' : 'Confirmar alquiler'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function ModalFinalizarAlquiler({ alquiler, form, setForm, onCerrar, onConfirmar, enviando }) {
+    if (!alquiler) return null;
+
+    const fechaSalida = formatDate(alquiler.fecha_salida);
+    const penalidad = Number(form.penalidad || 0);
+    const totalPagar = Number(alquiler.monto_total || 0) + penalidad;
+
+    return (
+        <div style={{
+            position:'fixed',
+            inset:0,
+            background:'rgba(0,0,0,.55)',
+            display:'flex',
+            justifyContent:'center',
+            alignItems:'center',
+            zIndex:9999,
+            padding:'1rem'
+        }}>
+            <div style={{
+                width:'100%',
+                maxWidth:520,
+                background:'#fff',
+                borderRadius:18,
+                boxShadow:'0 20px 60px rgba(0,0,0,.25)',
+                overflow:'hidden'
+            }}>
+                <div style={{ background:'#1a1a2e', color:'#fff', padding:'1rem 1.3rem' }}>
+                    <h2 style={{ margin:0, fontSize:20 }}>Registrar devolución</h2>
+                    <p style={{ margin:'0.3rem 0 0', color:'#d1d5db', fontSize:13 }}>
+                        Registre la devolución del vehículo y aplique penalidad si corresponde.
+                    </p>
+                </div>
+
+                <div style={{ padding:'1.3rem', display:'grid', gap:'0.9rem' }}>
+                    <div style={{ background:'#f9fafb', border:'1px solid #e5e7eb', borderRadius:12, padding:'0.9rem' }}>
+                        <b>{alquiler.vehiculo?.marca} {alquiler.vehiculo?.modelo}</b>
+                        <p style={{ margin:'0.35rem 0 0', color:'#6b7280' }}>
+                            Cliente: {alquiler.cliente?.persona?.nombres} {alquiler.cliente?.persona?.apellidos}
+                        </p>
+                        <p style={{ margin:'0.25rem 0 0', color:'#6b7280' }}>
+                            Salida: {fechaSalida} · Dev. programada: {formatDate(alquiler.fecha_devolucion_programada)}
+                        </p>
+                    </div>
+
+                    <div>
+                        <label style={{ fontWeight:800, color:'#374151', fontSize:13 }}>Fecha de devolución real</label>
+                        <input
+                            type="date"
+                            value={form.fecha_devolucion_real}
+                            min={fechaSalida}
+                            onChange={e => setForm({ ...form, fecha_devolucion_real:e.target.value })}
+                            style={{ ...input, width:'100%', marginTop:6 }}
+                        />
+                    </div>
+
+                    <div>
+                        <label style={{ fontWeight:800, color:'#374151', fontSize:13 }}>Estado del vehículo devuelto</label>
+                        <select
+                            value={form.con_danos}
+                            onChange={e => setForm({ ...form, con_danos:e.target.value, penalidad:e.target.value === 'no' ? '0' : form.penalidad })}
+                            style={{ ...input, width:'100%', marginTop:6 }}
+                        >
+                            <option value="no">Sin daños</option>
+                            <option value="si">Con daños / observaciones</option>
+                        </select>
+                    </div>
+
+                    {form.con_danos === 'si' && (
+                        <>
+                            <div>
+                                <label style={{ fontWeight:800, color:'#374151', fontSize:13 }}>Penalidad a cobrar</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={form.penalidad}
+                                    onChange={e => setForm({ ...form, penalidad:e.target.value })}
+                                    placeholder="Ej. 150.00"
+                                    style={{ ...input, width:'100%', marginTop:6 }}
+                                />
+                            </div>
+
+                            <div>
+                                <label style={{ fontWeight:800, color:'#374151', fontSize:13 }}>Observación del daño</label>
+                                <textarea
+                                    value={form.observacion}
+                                    onChange={e => setForm({ ...form, observacion:e.target.value })}
+                                    placeholder="Ej. Rayón en puerta, faro roto, golpe en parachoques..."
+                                    rows={3}
+                                    style={{ ...input, width:'100%', marginTop:6, resize:'vertical' }}
+                                />
+                            </div>
+                        </>
+                    )}
+
+                    <div style={{ background:'#fff7ed', border:'1px solid #fed7aa', color:'#9a3412', borderRadius:12, padding:'0.8rem', fontSize:13 }}>
+                        <b>Resumen:</b><br />
+                        Monto alquiler: {money(alquiler.monto_total)}<br />
+                        Penalidad: {money(penalidad)}<br />
+                        Total que debe pagar el cliente: <b>{money(totalPagar)}</b>
+                    </div>
+
+                    <div style={{ display:'flex', justifyContent:'flex-end', gap:10 }}>
+                        <button disabled={enviando} onClick={onCerrar} style={btnDanger}>Cancelar</button>
+                        <button disabled={enviando} onClick={onConfirmar} style={btnPrimary}>
+                            {enviando ? 'Finalizando...' : 'Confirmar devolución'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 function ReservasAdmin({ reservas, cargarDatos }) {
+    const [modalAlquiler, setModalAlquiler] = useState(false);
+    const [reservaSeleccionada, setReservaSeleccionada] = useState(null);
+    const [formAlquiler, setFormAlquiler] = useState({
+        fecha_salida:'',
+        fecha_devolucion_programada:'',
+    });
+    const [creandoAlquiler, setCreandoAlquiler] = useState(false);
+
     const cambiarEstado = async (id, estado) => {
         try {
             await clienteAxios.put(`/reservas/${id}`, { estado });
@@ -137,23 +463,43 @@ function ReservasAdmin({ reservas, cargarDatos }) {
         }
     };
 
-    const crearAlquiler = async (reserva) => {
-        const fecha_salida = prompt('Fecha de salida (YYYY-MM-DD):', formatDate(reserva.fecha_inicio));
-        if (!fecha_salida) return;
+    const abrirModalAlquiler = (reserva) => {
+        setReservaSeleccionada(reserva);
+        setFormAlquiler({
+            fecha_salida: formatDate(reserva.fecha_inicio),
+            fecha_devolucion_programada: formatDate(reserva.fecha_fin),
+        });
+        setModalAlquiler(true);
+    };
 
-        const fecha_devolucion_programada = prompt('Fecha devolución programada (YYYY-MM-DD):', formatDate(reserva.fecha_fin));
-        if (!fecha_devolucion_programada) return;
+    const confirmarCrearAlquiler = async () => {
+        if (!reservaSeleccionada) return;
+
+        if (!formAlquiler.fecha_salida || !formAlquiler.fecha_devolucion_programada) {
+            alert('Complete las fechas del alquiler.');
+            return;
+        }
+
+        if (formAlquiler.fecha_devolucion_programada <= formAlquiler.fecha_salida) {
+            alert('La fecha de devolución debe ser posterior a la fecha de salida.');
+            return;
+        }
 
         try {
+            setCreandoAlquiler(true);
             await clienteAxios.post('/alquileres', {
-                id_reserva: reserva.id,
-                fecha_salida,
-                fecha_devolucion_programada,
+                id_reserva: reservaSeleccionada.id,
+                fecha_salida: formAlquiler.fecha_salida,
+                fecha_devolucion_programada: formAlquiler.fecha_devolucion_programada,
             });
             alert('Alquiler creado correctamente.');
+            setModalAlquiler(false);
+            setReservaSeleccionada(null);
             await cargarDatos();
         } catch (error) {
             alert(error.response?.data?.message || 'No se pudo crear el alquiler.');
+        } finally {
+            setCreandoAlquiler(false);
         }
     };
 
@@ -167,36 +513,95 @@ function ReservasAdmin({ reservas, cargarDatos }) {
                         <h3 style={{ marginTop:0 }}>{r.vehiculo?.marca} {r.vehiculo?.modelo}</h3>
                         <p><b>Cliente:</b> {r.cliente?.persona?.nombres} {r.cliente?.persona?.apellidos}</p>
                         <p><b>Fechas:</b> {formatDate(r.fecha_inicio)} a {formatDate(r.fecha_fin)}</p>
-                        <p><b>Total:</b> {money(r.total_estimado)} | <b>Estado:</b> {r.estado}</p>
+                        <p><b>Total:</b> {money(r.total_estimado)} | <b>Estado:</b> {r.alquiler ? 'convertida a alquiler' : r.estado}</p>
                         <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-                            {r.estado === 'pendiente' && <button style={btnSoft} onClick={() => cambiarEstado(r.id, 'confirmada')}>Confirmar</button>}
-                            {['pendiente','confirmada'].includes(r.estado) && <button style={btnDanger} onClick={() => cambiarEstado(r.id, 'cancelada')}>Cancelar</button>}
-                            {['pendiente','confirmada'].includes(r.estado) && <button style={btnPrimary} onClick={() => crearAlquiler(r)}>Convertir a alquiler</button>}
+                            {r.estado === 'pendiente' && !r.alquiler && (
+                                <button style={btnSoft} onClick={() => cambiarEstado(r.id, 'confirmada')}>Confirmar</button>
+                            )}
+                            {r.estado === 'pendiente' && !r.alquiler && (
+                                <button style={btnDanger} onClick={() => cambiarEstado(r.id, 'cancelada')}>Cancelar</button>
+                            )}
+                            {['pendiente','confirmada'].includes(r.estado) && !r.alquiler && (
+                                <button style={btnPrimary} onClick={() => abrirModalAlquiler(r)}>Convertir a alquiler</button>
+                            )}
                         </div>
                     </div>
                 ))}
             </div>
+
+            {modalAlquiler && (
+                <ModalCrearAlquiler
+                    reserva={reservaSeleccionada}
+                    form={formAlquiler}
+                    setForm={setFormAlquiler}
+                    enviando={creandoAlquiler}
+                    onCerrar={() => {
+                        setModalAlquiler(false);
+                        setReservaSeleccionada(null);
+                    }}
+                    onConfirmar={confirmarCrearAlquiler}
+                />
+            )}
         </div>
     );
 }
 
 function AlquileresAdmin({ alquileres, cargarDatos }) {
-    const finalizar = async (alquiler) => {
-        const fecha_devolucion_real = prompt('Fecha de devolución real (YYYY-MM-DD):', new Date().toISOString().slice(0,10));
-        if (!fecha_devolucion_real) return;
+    const [modalDevolucion, setModalDevolucion] = useState(false);
+    const [alquilerSeleccionado, setAlquilerSeleccionado] = useState(null);
+    const [formDevolucion, setFormDevolucion] = useState({
+        fecha_devolucion_real:new Date().toISOString().slice(0,10),
+        con_danos:'no',
+        penalidad:'0',
+        observacion:'',
+    });
+    const [finalizando, setFinalizando] = useState(false);
 
-        const penalidad = prompt('Penalidad (0 si no aplica):', '0');
-        if (penalidad === null) return;
+    const abrirModalDevolucion = (alquiler) => {
+        setAlquilerSeleccionado(alquiler);
+        setFormDevolucion({
+            fecha_devolucion_real:new Date().toISOString().slice(0,10),
+            con_danos:'no',
+            penalidad:String(alquiler.penalidad || 0),
+            observacion:'',
+        });
+        setModalDevolucion(true);
+    };
+
+    const confirmarFinalizar = async () => {
+        if (!alquilerSeleccionado) return;
+
+        if (!formDevolucion.fecha_devolucion_real) {
+            alert('Seleccione la fecha de devolución real.');
+            return;
+        }
+
+        const penalidad = Number(formDevolucion.penalidad || 0);
+
+        if (penalidad < 0) {
+            alert('La penalidad no puede ser negativa.');
+            return;
+        }
+
+        if (formDevolucion.con_danos === 'si' && penalidad <= 0) {
+            alert('Si el vehículo tiene daños, ingrese una penalidad mayor a 0.');
+            return;
+        }
 
         try {
-            await clienteAxios.put(`/alquileres/${alquiler.id}/finalizar`, {
-                fecha_devolucion_real,
-                penalidad: Number(penalidad || 0),
+            setFinalizando(true);
+            await clienteAxios.put(`/alquileres/${alquilerSeleccionado.id}/finalizar`, {
+                fecha_devolucion_real: formDevolucion.fecha_devolucion_real,
+                penalidad,
             });
-            alert('Alquiler finalizado.');
+            alert('Devolución registrada correctamente.');
+            setModalDevolucion(false);
+            setAlquilerSeleccionado(null);
             await cargarDatos();
         } catch (error) {
             alert(error.response?.data?.message || 'No se pudo finalizar el alquiler.');
+        } finally {
+            setFinalizando(false);
         }
     };
 
@@ -210,14 +615,37 @@ function AlquileresAdmin({ alquileres, cargarDatos }) {
                         <h3 style={{ marginTop:0 }}>{a.vehiculo?.marca} {a.vehiculo?.modelo}</h3>
                         <p><b>Cliente:</b> {a.cliente?.persona?.nombres} {a.cliente?.persona?.apellidos}</p>
                         <p><b>Salida:</b> {formatDate(a.fecha_salida)} | <b>Dev. programada:</b> {formatDate(a.fecha_devolucion_programada)}</p>
-                        <p><b>Monto:</b> {money(a.monto_total)} | <b>Estado:</b> {a.estado}</p>
-                        {a.estado === 'activo' && <button style={btnPrimary} onClick={() => finalizar(a)}>Finalizar alquiler</button>}
+                        <p>
+                            <b>Monto:</b> {money(a.monto_total)} | <b>Penalidad:</b> {money(a.penalidad)}
+                            {' '}| <b>Estado:</b> {a.estado}
+                        </p>
+                        {a.estado === 'activo' && (
+                            <button style={btnPrimary} onClick={() => abrirModalDevolucion(a)}>Registrar devolución</button>
+                        )}
+                        {a.estado === 'finalizado' && (
+                            <p style={{ color:'#16a34a', fontWeight:700 }}>Devolución registrada correctamente.</p>
+                        )}
                     </div>
                 ))}
             </div>
+
+            {modalDevolucion && (
+                <ModalFinalizarAlquiler
+                    alquiler={alquilerSeleccionado}
+                    form={formDevolucion}
+                    setForm={setFormDevolucion}
+                    enviando={finalizando}
+                    onCerrar={() => {
+                        setModalDevolucion(false);
+                        setAlquilerSeleccionado(null);
+                    }}
+                    onConfirmar={confirmarFinalizar}
+                />
+            )}
         </div>
     );
 }
+
 
 function PagosAdmin({ pagos, cargarDatos }) {
     const aprobar = async (id) => {
@@ -302,6 +730,10 @@ function PagosAdmin({ pagos, cargarDatos }) {
                                     <button style={btnSoft} onClick={() => aprobar(p.id)}>Confirmar pago</button>
                                     <button style={btnDanger} onClick={() => rechazar(p.id)}>Rechazar</button>
                                 </>
+                            )}
+
+                            {['aprobado', 'pagado'].includes(p.estado) && (
+                                <button style={btnSoft} onClick={() => imprimirComprobantePago(p)}>Ver comprobante</button>
                             )}
 
                             {!['anulado', 'rechazado'].includes(p.estado) && (

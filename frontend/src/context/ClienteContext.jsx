@@ -6,7 +6,7 @@ const ClienteContext = createContext();
 
 const FORM_INICIAL = {
     dni: '', nombres: '', apellidos: '', telefono: '', correo: '',
-    direccion: '', licencia_conducir: '', fecha_vencimiento_licencia: '',
+    direccion: '', tiene_licencia: 'no', licencia_conducir: '', fecha_vencimiento_licencia: '',
 };
 
 export const ClienteProvider = ({ children }) => {
@@ -32,6 +32,17 @@ export const ClienteProvider = ({ children }) => {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
+
+        if (name === 'tiene_licencia' && value === 'no') {
+            setForm(prev => ({
+                ...prev,
+                tiene_licencia: 'no',
+                licencia_conducir: '',
+                fecha_vencimiento_licencia: '',
+            }));
+            return;
+        }
+
         setForm(prev => ({ ...prev, [name]: value }));
     };
 
@@ -40,7 +51,13 @@ export const ClienteProvider = ({ children }) => {
     const crearCliente = async (e) => {
         e.preventDefault();
         try {
-            const { data } = await clienteAxios.post('/clientes', form);
+            const payload = {
+                ...form,
+                licencia_conducir: form.tiene_licencia === 'si' ? form.licencia_conducir : null,
+                fecha_vencimiento_licencia: form.tiene_licencia === 'si' ? form.fecha_vencimiento_licencia : null,
+            };
+
+            const { data } = await clienteAxios.post('/clientes', payload);
             setClientes(prev => [data.cliente, ...prev]);
             mostrarAlerta(data.mensaje);
             resetForm();
@@ -54,7 +71,9 @@ export const ClienteProvider = ({ children }) => {
         setForm({
             dni: c.persona.dni, nombres: c.persona.nombres, apellidos: c.persona.apellidos,
             telefono: c.persona.telefono || '', correo: c.persona.correo || '',
-            direccion: c.persona.direccion || '', licencia_conducir: c.licencia_conducir || '',
+            direccion: c.persona.direccion || '',
+            tiene_licencia: c.licencia_conducir ? 'si' : 'no',
+            licencia_conducir: c.licencia_conducir || '',
             fecha_vencimiento_licencia: c.fecha_vencimiento_licencia || '',
         });
         setModoEdicion(true);
@@ -64,7 +83,13 @@ export const ClienteProvider = ({ children }) => {
     const actualizarCliente = async (e) => {
         e.preventDefault();
         try {
-            const { data } = await clienteAxios.put(`/clientes/${editandoId}`, form);
+            const payload = {
+                ...form,
+                licencia_conducir: form.tiene_licencia === 'si' ? form.licencia_conducir : null,
+                fecha_vencimiento_licencia: form.tiene_licencia === 'si' ? form.fecha_vencimiento_licencia : null,
+            };
+
+            const { data } = await clienteAxios.put(`/clientes/${editandoId}`, payload);
             setClientes(prev => prev.map(c => c.id === editandoId ? data.cliente : c));
             mostrarAlerta(data.mensaje);
             resetForm();
